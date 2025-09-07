@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:15
+    container_name: udbm-postgres
+    environment:
+      POSTGRES_DB: udbm_db
+      POSTGRES_USER: udbm_user
+      POSTGRES_PASSWORD: udbm_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - udbm-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: udbm-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - udbm-network
+
+  # UDBM后端API
+  api:
+    build: .
+    container_name: udbm-api
+    environment:
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=udbm_user
+      - POSTGRES_PASSWORD=udbm_password
+      - POSTGRES_DB=udbm_db
+      - REDIS_HOST=redis
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    networks:
+      - udbm-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # pgAdmin (可选，用于数据库管理)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: udbm-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@udbm.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - udbm-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  udbm-network:
+    driver: bridge

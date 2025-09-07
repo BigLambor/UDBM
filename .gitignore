@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Build files
+dist/
+build/
+*.min.js
+*.min.js.map
+
+# Cache
+.cache/
+.nyc_output/
+coverage/
+
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
