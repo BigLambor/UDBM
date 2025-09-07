@@ -66,23 +66,41 @@ UDBM/
 
 ## 🚀 快速开始
 
-### 1. 启动后端服务
+### 1. 一键启动（推荐）
+
+```bash
+chmod +x ./start-project.sh
+./start-project.sh start         # 本地模式：后端 + 前端
+
+# 常用：仅后端/仅前端/指定端口
+./start-project.sh start --backend
+./start-project.sh start --frontend
+./start-project.sh start --port 8000
+```
+
+- 前端: http://localhost:3000
+- 后端API: http://localhost:8000
+- API文档: http://localhost:8000/docs
+
+### 2. 分步启动
+
+方式A：Docker 启动数据库与缓存 + 本地启动后端
 
 ```bash
 cd udbm-backend
-
-# 方式1: 使用Docker (推荐)
-docker-compose up -d postgres redis
-python start.py
-
-# 方式2: 本地开发
+docker-compose up -d postgres redis   # 首次启动将自动执行 init.sql 等脚本
 pip install -r requirements.txt
 python start.py
 ```
 
-后端API将在: http://localhost:8000
+方式B：Docker 启动包含 API 在内的全栈后端
 
-### 2. 启动前端界面
+```bash
+cd udbm-backend
+docker-compose up -d                   # 将启动 postgres、redis、api
+```
+
+方式C：启动前端
 
 ```bash
 cd udbm-frontend
@@ -90,13 +108,17 @@ npm install
 npm start
 ```
 
-前端界面将在: http://localhost:3000
+前端默认通过 CRA 代理连接后端，也可设置环境变量：
+
+```bash
+export REACT_APP_API_BASE_URL="http://localhost:8000/api/v1"
+```
 
 ### 3. 访问应用
 
 - **前端界面**: http://localhost:3000
 - **API文档**: http://localhost:8000/docs
-- **健康检查**: http://localhost:8000/api/v1/health/
+- **健康检查**: http://localhost:8000/health 或 http://localhost:8000/api/v1/health/
 
 ## 🎮 使用演示
 
@@ -150,8 +172,8 @@ curl -X POST http://localhost:8000/api/v1/databases/ \
     "environment": "development"
   }'
 
-# 测试数据库连接
-curl http://localhost:8000/api/v1/databases/1/test-connection
+# 测试数据库连接（注意为 POST 方法）
+curl -X POST http://localhost:8000/api/v1/databases/1/test-connection
 ```
 
 ## 📊 数据库设计
@@ -194,9 +216,6 @@ pip install -r requirements.txt
 
 # 启动开发服务器
 python start.py
-
-# 运行演示脚本
-python demo.py
 ```
 
 ### 前端开发

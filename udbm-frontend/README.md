@@ -10,7 +10,8 @@ UDBM前端是基于React + Ant Design开发的现代化Web界面，为统一数�
 - **Ant Design**: 5.x - 企业级UI组件库
 - **React Router**: 6.x - 路由管理
 - **Axios**: HTTP客户端
-- **TypeScript**: 类型安全支持
+  
+注：当前代码基于 JavaScript，`typescript` 依赖仅用于类型工具/ESLint，可选。
 
 ## 功能特性
 
@@ -71,7 +72,16 @@ npm install
 npm start
 ```
 
-应用将在 http://localhost:3000 启动
+应用将在 http://localhost:3000 启动。
+
+后端API地址配置：
+- 默认通过 `package.json` 中的代理连接 `http://localhost:8000`
+- 或通过环境变量覆盖：
+
+```bash
+export REACT_APP_API_BASE_URL="http://localhost:8000/api/v1"
+npm start
+```
 
 ### 4. 构建生产版本
 
@@ -174,7 +184,7 @@ npm start
 
 ```bash
 npm run build
-# 将build目录中的文件部署到Web服务器
+# 将 build 目录中的文件部署到 Web 服务器
 ```
 
 ### Docker部署
@@ -185,6 +195,12 @@ docker build -t udbm-frontend .
 
 # 运行容器
 docker run -p 3000:80 udbm-frontend
+
+如需指定后端API地址，可在构建前设置：
+
+```bash
+docker build --build-arg REACT_APP_API_BASE_URL="http://backend:8000/api/v1" -t udbm-frontend .
+```
 ```
 
 ## 浏览器支持

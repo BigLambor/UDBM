@@ -45,11 +45,8 @@ pip install -r requirements.txt
 #### 方式1: 使用Docker (推荐)
 
 ```bash
-# 启动PostgreSQL和Redis
+# 启动PostgreSQL和Redis（首次启动将自动执行 init.sql、performance_tuning_tables.sql、sample_performance_data.sql）
 docker-compose up -d postgres redis
-
-# 创建数据库表
-docker exec -i udbm-postgres psql -U udbm_user -d udbm_db < init.sql
 ```
 
 #### 方式2: 本地PostgreSQL
@@ -70,10 +67,10 @@ psql -U udbm_user -d udbm_db -f init.sql
 ### 4. 启动应用
 
 ```bash
-# 方式1: 使用启动脚本
+# 方式1: 启动脚本
 python start.py
 
-# 方式2: 直接运行
+# 方式2: 直接运行（开发）
 uvicorn app.main:app --reload
 ```
 
@@ -209,17 +206,27 @@ pytest --cov=app tests/
 docker build -t udbm-backend .
 
 # 运行容器
-docker run -p 8000:8000 udbm-backend
+docker run --env POSTGRES_SERVER=postgres \
+           --env POSTGRES_USER=udbm_user \
+           --env POSTGRES_PASSWORD=udbm_password \
+           --env POSTGRES_DB=udbm_db \
+           -p 8000:8000 udbm-backend
 ```
 
 ### Docker Compose部署
 
 ```bash
-# 启动所有服务
+# 启动所有服务（postgres、redis、api、可选pgadmin）
 docker-compose up -d
 
 # 查看日志
 docker-compose logs -f api
+
+## 健康检查
+
+- 基础健康检查: `GET /health` 或 `GET /api/v1/health/`
+- 数据库健康检查: `GET /api/v1/health/database`
+- 详细健康检查: `GET /api/v1/health/detailed`
 ```
 
 ## 贡献指南
