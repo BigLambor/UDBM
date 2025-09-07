@@ -14,6 +14,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./performance_tuning_tables.sql:/docker-entrypoint-initdb.d/20_performance_tuning_tables.sql
+      - ./sample_performance_data.sql:/docker-entrypoint-initdb.d/30_sample_performance_data.sql
     networks:
       - udbm-network
 

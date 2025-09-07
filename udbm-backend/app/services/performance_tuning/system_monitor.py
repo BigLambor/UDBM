@@ -13,7 +13,7 @@ import psutil
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
