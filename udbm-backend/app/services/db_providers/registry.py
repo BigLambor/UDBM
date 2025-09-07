@@ -6,10 +6,12 @@ from sqlalchemy.orm import Session
 
 from app.models.database import DatabaseInstance, DatabaseType
 from app.services.db_providers.postgres import PostgresProvider
+from app.services.db_providers.mysql import MySQLProvider
 
 
 _type_to_provider: Dict[str, Type] = {
     "postgresql": PostgresProvider,
+    "mysql": MySQLProvider,
 }
 
 
