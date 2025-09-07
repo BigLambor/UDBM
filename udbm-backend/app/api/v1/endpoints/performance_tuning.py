@@ -39,6 +39,7 @@ from app.services.performance_tuning import (
     SlowQueryAnalyzer, SystemMonitor, TuningExecutor, ExecutionPlanAnalyzer
 )
 from app.services.performance_tuning.postgres_config_optimizer import PostgreSQLConfigOptimizer
+from app.services.db_providers.registry import get_provider
 
 router = APIRouter()
 
@@ -92,7 +93,9 @@ async def get_performance_dashboard(
 ):
     """获取性能监控仪表板数据"""
     try:
-        dashboard_data = monitor.get_performance_dashboard(database_id, hours)
+        # 使用Provider抽象以支持多数据库
+        provider = get_provider(get_sync_db_session(), database_id)
+        dashboard_data = provider.monitor.dashboard(database_id, hours)
         return PerformanceDashboardResponse(**dashboard_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取性能仪表板失败: {str(e)}")
@@ -107,7 +110,8 @@ async def get_slow_queries(
 ):
     """获取慢查询列表"""
     try:
-        slow_queries = analyzer.get_slow_queries(database_id, limit, offset)
+        provider = get_provider(get_sync_db_session(), database_id)
+        slow_queries = provider.slow_queries.list(database_id, limit, offset)
         return [SlowQueryResponse.from_orm(query) for query in slow_queries]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取慢查询列表失败: {str(e)}")
@@ -122,11 +126,12 @@ async def capture_slow_queries(
 ):
     """捕获慢查询"""
     try:
-        captured_queries = analyzer.capture_slow_queries(database_id, threshold_seconds)
+        provider = get_provider(get_sync_db_session(), database_id)
+        captured_queries = provider.slow_queries.capture(database_id, threshold_seconds)
         saved_queries = []
 
         for query_data in captured_queries:
-            slow_query = analyzer.save_slow_query(query_data)
+            slow_query = provider.slow_queries.save(query_data)
             saved_queries.append(SlowQueryResponse.from_orm(slow_query))
 
         return {
@@ -169,7 +174,8 @@ async def get_query_patterns(
 ):
     """获取查询模式分析"""
     try:
-        patterns = analyzer.analyze_query_patterns(database_id, days)
+        provider = get_provider(get_sync_db_session(), database_id)
+        patterns = provider.slow_queries.patterns(database_id, days)
         return QueryPatternAnalysisResponse(**patterns)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取查询模式分析失败: {str(e)}")
@@ -183,7 +189,8 @@ async def get_performance_statistics(
 ):
     """获取性能统计信息"""
     try:
-        stats = analyzer.get_query_statistics(database_id, days)
+        provider = get_provider(get_sync_db_session(), database_id)
+        stats = provider.slow_queries.statistics(database_id, days)
         return PerformanceStatisticsResponse(**stats)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取性能统计失败: {str(e)}")
@@ -196,8 +203,9 @@ async def collect_performance_metrics(
 ):
     """收集性能指标"""
     try:
-        metrics = monitor.collect_system_metrics(database_id)
-        saved_metrics = monitor.save_performance_metrics(metrics)
+        provider = get_provider(get_sync_db_session(), database_id)
+        metrics = provider.monitor.collect_metrics(database_id)
+        saved_metrics = provider.monitor.save_metrics(metrics)
 
         return {
             "message": f"成功收集 {len(saved_metrics)} 条性能指标",
@@ -216,13 +224,13 @@ async def get_performance_metrics(
 ):
     """获取性能指标历史数据"""
     try:
+        provider = get_provider(get_sync_db_session(), database_id)
         if metric_type:
-            metrics = monitor.get_metrics_history(database_id, metric_type, hours)
+            metrics = provider.monitor.history(database_id, metric_type, hours)
         else:
-            # 获取所有类型的最新指标
             metrics = []
             for mtype in ["cpu", "memory", "io", "connections", "throughput"]:
-                metrics.extend(monitor.get_metrics_history(database_id, mtype, hours))
+                metrics.extend(provider.monitor.history(database_id, mtype, hours))
 
         return [PerformanceMetricResponse.from_orm(metric) for metric in metrics]
     except Exception as e:
@@ -236,7 +244,8 @@ async def get_latest_metrics(
 ):
     """获取最新性能指标"""
     try:
-        latest_metrics = monitor.get_latest_metrics(database_id)
+        provider = get_provider(get_sync_db_session(), database_id)
+        latest_metrics = provider.monitor.latest_metrics(database_id)
         return latest_metrics
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取最新指标失败: {str(e)}")
@@ -250,6 +259,7 @@ async def perform_system_diagnosis(
 ):
     """执行系统诊断"""
     try:
+        # 与现有实现保持一致，后续可抽象到provider
         diagnosis = monitor.perform_system_diagnosis(database_id)
         return SystemDiagnosisResponse.from_orm(diagnosis)
     except Exception as e:
@@ -462,7 +472,8 @@ async def start_realtime_monitoring(
 ):
     """启动实时监控"""
     try:
-        result = monitor.start_realtime_monitoring(database_id, interval_seconds)
+        provider = get_provider(get_sync_db_session(), database_id)
+        result = provider.monitor.start_realtime(database_id, interval_seconds)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"启动实时监控失败: {str(e)}")
@@ -475,7 +486,8 @@ async def stop_realtime_monitoring(
 ):
     """停止实时监控"""
     try:
-        result = monitor.stop_realtime_monitoring(database_id)
+        provider = get_provider(get_sync_db_session(), database_id)
+        result = provider.monitor.stop_realtime(database_id)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"停止实时监控失败: {str(e)}")
@@ -488,7 +500,8 @@ async def get_monitoring_status(
 ):
     """获取监控状态"""
     try:
-        status = monitor.get_monitoring_status(database_id)
+        provider = get_provider(get_sync_db_session(), database_id)
+        status = provider.monitor.status(database_id)
         return status
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取监控状态失败: {str(e)}")
@@ -501,7 +514,8 @@ async def get_alerts(
 ):
     """获取告警列表"""
     try:
-        alerts = monitor.check_alerts(database_id)
+        provider = get_provider(get_sync_db_session(), database_id)
+        alerts = provider.monitor.alerts(database_id)
         return {"alerts": alerts, "total": len(alerts)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取告警失败: {str(e)}")
@@ -514,7 +528,8 @@ async def get_system_recommendations(
 ):
     """获取系统优化建议"""
     try:
-        recommendations = monitor.get_system_recommendations(database_id)
+        provider = get_provider(get_sync_db_session(), database_id)
+        recommendations = provider.monitor.recommendations(database_id)
         return {"recommendations": recommendations, "total": len(recommendations)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取优化建议失败: {str(e)}")
@@ -528,7 +543,8 @@ async def generate_performance_report(
 ):
     """生成性能报告"""
     try:
-        report = monitor.generate_performance_report(database_id, days)
+        provider = get_provider(get_sync_db_session(), database_id)
+        report = provider.monitor.report(database_id, days)
         return report
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"生成性能报告失败: {str(e)}")
