@@ -386,8 +386,7 @@ const SlowQueryAnalysis = () => {
     animation: {
       appear: {
         animation: 'scale-in-y',
-        duration: 800,
-        easing: 'easeOutCubic'
+        duration: 800
       }
     },
     autoFit: true,
