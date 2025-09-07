@@ -47,13 +47,25 @@ class DatabaseInstanceInitializer:
             logger.error(f"获取PostgreSQL类型ID失败: {e}")
             return None
 
+    async def get_mysql_type_id(self, session: AsyncSession) -> Optional[int]:
+        """获取MySQL数据库类型的ID"""
+        try:
+            result = await session.execute(
+                text("SELECT id FROM udbm.database_types WHERE name = 'mysql' AND is_active = true")
+            )
+            row = result.fetchone()
+            return row[0] if row else None
+        except Exception as e:
+            logger.error(f"获取MySQL类型ID失败: {e}")
+            return None
+
     async def check_instance_exists(self, session: AsyncSession, type_id: int) -> bool:
-        """检查PostgreSQL实例是否已存在"""
+        """检查指定类型在默认host/port的实例是否已存在"""
         try:
             result = await session.execute(
                 text("""
                     SELECT COUNT(*) FROM udbm.database_instances
-                    WHERE type_id = :type_id AND host = 'localhost' AND port = 5432
+                    WHERE type_id = :type_id AND host = 'localhost'
                 """),
                 {"type_id": type_id}
             )
@@ -96,6 +108,41 @@ class DatabaseInstanceInitializer:
 
         except Exception as e:
             logger.error(f"创建PostgreSQL实例失败: {e}")
+            raise
+
+    async def create_mysql_instance(self, session: AsyncSession, type_id: int):
+        """创建MySQL实例记录（用于演示）"""
+        try:
+            await session.execute(
+                text(
+                    """
+                    INSERT INTO udbm.database_instances
+                    (name, type_id, host, port, database_name, username, password_encrypted,
+                     environment, status, health_status, ssl_enabled, tags)
+                    VALUES
+                    (:name, :type_id, :host, :port, :database_name, :username, :password,
+                     :environment, :status, :health_status, :ssl_enabled, :tags)
+                    """
+                ),
+                {
+                    "name": "UDBM MySQL Database",
+                    "type_id": type_id,
+                    "host": "localhost",
+                    "port": 3306,
+                    "database_name": "udbm_mysql_demo",
+                    "username": "root",
+                    "password": "password",
+                    "environment": "development",
+                    "status": "active",
+                    "health_status": "unknown",
+                    "ssl_enabled": False,
+                    "tags": '{"auto_created": true, "purpose": "demo_mysql"}'
+                }
+            )
+
+            logger.info("MySQL实例创建成功")
+        except Exception as e:
+            logger.error(f"创建MySQL实例失败: {e}")
             raise
 
     async def initialize_postgres_instance(self):
@@ -142,11 +189,35 @@ async def initialize_database_instances():
     initializer = DatabaseInstanceInitializer()
 
     try:
-        success = await initializer.initialize_postgres_instance()
-        if success:
-            logger.info("✅ 数据库实例初始化成功")
+        # 初始化PostgreSQL实例
+        pg_success = await initializer.initialize_postgres_instance()
+        if pg_success:
+            logger.info("✅ PostgreSQL 实例初始化成功")
         else:
-            logger.error("❌ 数据库实例初始化失败")
+            logger.error("❌ PostgreSQL 实例初始化失败")
+
+        # 尝试初始化一个MySQL演示实例（若类型存在且未创建）
+        async with initializer.async_session() as session:
+            mysql_type_id = await initializer.get_mysql_type_id(session)
+            if mysql_type_id:
+                # 仅在不存在时创建（host=localhost, port=3306）
+                result = await session.execute(
+                    text(
+                        """
+                        SELECT COUNT(*) FROM udbm.database_instances
+                        WHERE type_id = :type_id AND host = 'localhost' AND port = 3306
+                        """
+                    ),
+                    {"type_id": mysql_type_id}
+                )
+                exists = (result.scalar() or 0) > 0
+                if not exists:
+                    await initializer.create_mysql_instance(session, mysql_type_id)
+                    await session.commit()
+                else:
+                    logger.info("MySQL 实例已存在，跳过创建")
+            else:
+                logger.warning("未找到 MySQL 类型，跳过 MySQL 实例初始化")
     finally:
         await initializer.close()
 

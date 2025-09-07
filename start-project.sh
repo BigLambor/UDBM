@@ -290,7 +290,7 @@ start_frontend() {
 
         # 设置环境变量
         export PORT=$FRONTEND_PORT
-        export REACT_APP_API_URL="http://localhost:$BACKEND_PORT"
+        export REACT_APP_API_BASE_URL="http://localhost:$BACKEND_PORT/api/v1"
 
         # 启动前端服务
         nohup npm start > "$FRONTEND_LOG" 2>&1 &
