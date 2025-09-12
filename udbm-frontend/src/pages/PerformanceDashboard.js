@@ -43,17 +43,24 @@ const PerformanceDashboard = () => {
   const [vacuumStrategy, setVacuumStrategy] = useState(null);
   const [configAnalysis, setConfigAnalysis] = useState(null);
   
+  // MySQL 特有数据
+  const [mysqlInsights, setMysqlInsights] = useState(null);
+  const [mysqlConfigAnalysis, setMysqlConfigAnalysis] = useState(null);
+  const [mysqlOptimizationSummary, setMysqlOptimizationSummary] = useState(null);
+  
   const [loadingStates, setLoadingStates] = useState({
     dashboard: false,
     monitoring: false,
     alerts: false,
-    postgres: false
+    postgres: false,
+    mysql: false
   });
   const [errorStates, setErrorStates] = useState({
     dashboard: null,
     monitoring: null,
     alerts: null,
-    postgres: null
+    postgres: null,
+    mysql: null
   });
 
   // 获取数据库列表
@@ -71,6 +78,11 @@ const PerformanceDashboard = () => {
       // 如果是PostgreSQL，获取特有数据
       if (selectedDatabase.type === 'postgresql') {
         fetchPostgreSQLSpecificData();
+      }
+      
+      // 如果是MySQL，获取特有数据
+      if (selectedDatabase.type === 'mysql') {
+        fetchMySQLSpecificData();
       }
     }
   }, [selectedDatabase]);
@@ -195,6 +207,37 @@ const PerformanceDashboard = () => {
     }
   };
 
+  // 获取MySQL特有数据
+  const fetchMySQLSpecificData = async () => {
+    if (!selectedDatabase || !selectedDatabase.id) {
+      console.warn('没有选择数据库实例');
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, mysql: true }));
+    setErrorStates(prev => ({ ...prev, mysql: null }));
+
+    try {
+      const [insights, config, summary] = await Promise.all([
+        performanceAPI.getMySQLPerformanceInsights(selectedDatabase.id),
+        performanceAPI.analyzeMySQLConfig(selectedDatabase.id),
+        performanceAPI.getMySQLOptimizationSummary(selectedDatabase.id)
+      ]);
+
+      setMysqlInsights(insights);
+      setMysqlConfigAnalysis(config);
+      setMysqlOptimizationSummary(summary);
+    } catch (error) {
+      console.error('获取MySQL特有数据失败:', error);
+      setErrorStates(prev => ({
+        ...prev,
+        mysql: error.message || '获取MySQL特有数据失败'
+      }));
+    } finally {
+      setLoadingStates(prev => ({ ...prev, mysql: false }));
+    }
+  };
+
   const fetchAlerts = async () => {
     if (!selectedDatabase || !selectedDatabase.id) {
       console.warn('没有选择数据库实例');
@@ -305,14 +348,22 @@ const PerformanceDashboard = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    setErrorStates({ dashboard: null, monitoring: null, alerts: null });
+    setErrorStates({ dashboard: null, monitoring: null, alerts: null, postgres: null, mysql: null });
 
-    await Promise.all([
+    const promises = [
       fetchDashboardData(),
       fetchMonitoringStatus(),
       fetchAlerts()
-    ]);
+    ];
 
+    // 根据数据库类型添加特有数据刷新
+    if (selectedDatabase?.type === 'postgresql') {
+      promises.push(fetchPostgreSQLSpecificData());
+    } else if (selectedDatabase?.type === 'mysql') {
+      promises.push(fetchMySQLSpecificData());
+    }
+
+    await Promise.all(promises);
     setRefreshing(false);
   };
 
@@ -844,6 +895,9 @@ const PerformanceDashboard = () => {
         tableHealth={tableHealth}
         vacuumStrategy={vacuumStrategy}
         configAnalysis={configAnalysis}
+        mysqlInsights={mysqlInsights}
+        mysqlConfigAnalysis={mysqlConfigAnalysis}
+        mysqlOptimizationSummary={mysqlOptimizationSummary}
       />
     </div>
   );

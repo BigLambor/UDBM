@@ -282,6 +282,55 @@ export const performanceAPI = {
   // PostgreSQL性能洞察
   getPostgresPerformanceInsights: (databaseId) =>
     api.get(`/performance/postgres/performance-insights/${databaseId}`),
+
+  // =====================================
+  // MySQL 增强调优 API 接口
+  // =====================================
+
+  // MySQL 基础分析接口
+  analyzeMySQLConfig: (databaseId) =>
+    api.get(`/performance/mysql/config-analysis/${databaseId}`),
+
+  analyzeMySQLStorageEngine: (databaseId) =>
+    api.get(`/performance/mysql/storage-engine-analysis/${databaseId}`),
+
+  analyzeMySQLHardware: (databaseId) =>
+    api.get(`/performance/mysql/hardware-analysis/${databaseId}`),
+
+  analyzeMySQLSecurity: (databaseId) =>
+    api.get(`/performance/mysql/security-analysis/${databaseId}`),
+
+  analyzeMySQLReplication: (databaseId) =>
+    api.get(`/performance/mysql/replication-analysis/${databaseId}`),
+
+  analyzeMySQLPartition: (databaseId) =>
+    api.get(`/performance/mysql/partition-analysis/${databaseId}`),
+
+  analyzeMySQLBackup: (databaseId) =>
+    api.get(`/performance/mysql/backup-analysis/${databaseId}`),
+
+  // MySQL 综合分析接口
+  comprehensiveMySQLAnalysis: (databaseId, includeAreas) =>
+    api.post(`/performance/mysql/comprehensive-analysis/${databaseId}`, {
+      include_areas: includeAreas || ["config", "storage", "hardware", "security", "replication", "partition", "backup"]
+    }),
+
+  getMySQLOptimizationSummary: (databaseId) =>
+    api.get(`/performance/mysql/optimization-summary/${databaseId}`),
+
+  getMySQLPerformanceInsights: (databaseId) =>
+    api.get(`/performance/mysql/performance-insights/${databaseId}`),
+
+  // MySQL 实用工具接口
+  generateMySQLTuningScript: (databaseId, optimizationAreas) =>
+    api.post(`/performance/mysql/generate-tuning-script/${databaseId}`, null, {
+      params: { optimization_areas: optimizationAreas }
+    }),
+
+  quickMySQLOptimization: (databaseId, focusArea = 'performance') =>
+    api.post(`/performance/mysql/quick-optimization/${databaseId}`, null, {
+      params: { focus_area: focusArea }
+    }),
 };
 
 // 健康检查API

@@ -9,7 +9,7 @@ import {
   BellOutlined, SettingOutlined, ReloadOutlined, FilterOutlined,
   LineChartOutlined, BarChartOutlined, DashboardOutlined,
   ThunderboltOutlined, DatabaseOutlined, ClockCircleOutlined,
-  FireOutlined, EyeOutlined, NotificationOutlined
+  FireOutlined, EyeOutlined, NotificationOutlined, EditOutlined, PlusOutlined
 } from '@ant-design/icons';
 
 const { Option } = Select;
