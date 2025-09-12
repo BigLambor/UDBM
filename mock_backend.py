@@ -408,6 +408,168 @@ async def mysql_quick_optimization(database_id: int, request_data: dict = None):
         ]
     }
 
+# 慢查询分析接口
+@app.get("/api/v1/performance/slow-queries/{database_id}")
+async def get_slow_queries(database_id: int):
+    """获取慢查询列表"""
+    return {
+        "slow_queries": [
+            {
+                "id": 1,
+                "query_text": "SELECT * FROM orders o JOIN customers c ON o.customer_id = c.id WHERE o.created_at >= '2024-01-01' AND c.region = 'Asia' ORDER BY o.total_amount DESC LIMIT 100",
+                "execution_time": 2.45,
+                "rows_examined": 125000,
+                "rows_sent": 100,
+                "timestamp": "2024-01-20T10:30:15Z",
+                "database_name": "production",
+                "user": "app_user",
+                "lock_time": 0.001,
+                "frequency": 15
+            },
+            {
+                "id": 2,
+                "query_text": "UPDATE products SET stock_quantity = stock_quantity - 1 WHERE id IN (SELECT product_id FROM order_items WHERE order_id = 12345)",
+                "execution_time": 1.82,
+                "rows_examined": 50000,
+                "rows_sent": 0,
+                "timestamp": "2024-01-20T10:25:30Z",
+                "database_name": "production",
+                "user": "app_user",
+                "lock_time": 0.005,
+                "frequency": 8
+            },
+            {
+                "id": 3,
+                "query_text": "SELECT COUNT(*) FROM user_activities WHERE activity_type = 'login' AND created_at BETWEEN '2024-01-01' AND '2024-01-20'",
+                "execution_time": 3.21,
+                "rows_examined": 2500000,
+                "rows_sent": 1,
+                "timestamp": "2024-01-20T10:20:45Z",
+                "database_name": "production",
+                "user": "analytics_user",
+                "lock_time": 0.002,
+                "frequency": 25
+            },
+            {
+                "id": 4,
+                "query_text": "DELETE FROM temp_reports WHERE created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)",
+                "execution_time": 1.95,
+                "rows_examined": 180000,
+                "rows_sent": 0,
+                "timestamp": "2024-01-20T09:15:20Z",
+                "database_name": "production",
+                "user": "cleanup_job",
+                "lock_time": 0.008,
+                "frequency": 3
+            }
+        ],
+        "total_count": 4,
+        "generated_at": datetime.now().isoformat()
+    }
+
+@app.post("/api/v1/performance/slow-queries/{database_id}/capture")
+async def capture_slow_queries(database_id: int, request_data: dict = None):
+    """捕获慢查询"""
+    threshold = request_data.get("threshold_seconds", 1.0) if request_data else 1.0
+    
+    return {
+        "message": f"慢查询捕获已启动，阈值: {threshold}秒",
+        "queries": [
+            {
+                "id": 5,
+                "query_text": "SELECT u.*, p.profile_data FROM users u LEFT JOIN profiles p ON u.id = p.user_id WHERE u.last_login < '2024-01-01'",
+                "execution_time": threshold + random.uniform(0.5, 2.0),
+                "rows_examined": random.randint(10000, 100000),
+                "rows_sent": random.randint(100, 5000),
+                "timestamp": datetime.now().isoformat(),
+                "database_name": "production",
+                "user": "app_user",
+                "lock_time": random.uniform(0.001, 0.01),
+                "frequency": random.randint(1, 20)
+            }
+        ],
+        "captured_at": datetime.now().isoformat(),
+        "threshold_seconds": threshold
+    }
+
+@app.get("/api/v1/performance/query-patterns/{database_id}")
+async def get_query_patterns(database_id: int):
+    """获取查询模式分析"""
+    return {
+        "query_patterns": [
+            {
+                "pattern_type": "SELECT",
+                "count": 1250,
+                "avg_execution_time": 0.85,
+                "total_execution_time": 1062.5,
+                "percentage": 45.2,
+                "sample_query": "SELECT * FROM orders WHERE status = ?"
+            },
+            {
+                "pattern_type": "UPDATE",
+                "count": 890,
+                "avg_execution_time": 1.2,
+                "total_execution_time": 1068.0,
+                "percentage": 32.1,
+                "sample_query": "UPDATE products SET stock_quantity = ? WHERE id = ?"
+            },
+            {
+                "pattern_type": "INSERT",
+                "count": 450,
+                "avg_execution_time": 0.65,
+                "total_execution_time": 292.5,
+                "percentage": 16.3,
+                "sample_query": "INSERT INTO user_activities (user_id, activity_type, created_at) VALUES (?, ?, ?)"
+            },
+            {
+                "pattern_type": "DELETE",
+                "count": 180,
+                "avg_execution_time": 1.8,
+                "total_execution_time": 324.0,
+                "percentage": 6.4,
+                "sample_query": "DELETE FROM temp_data WHERE created_at < ?"
+            }
+        ],
+        "analysis_period": "last_24_hours",
+        "total_queries": 2770,
+        "generated_at": datetime.now().isoformat()
+    }
+
+@app.get("/api/v1/performance/statistics/{database_id}")
+async def get_performance_statistics(database_id: int):
+    """获取性能统计信息"""
+    return {
+        "query_statistics": {
+            "total_queries": random.randint(15000, 25000),
+            "slow_queries": random.randint(50, 200),
+            "slow_query_percentage": round(random.uniform(0.5, 3.0), 2),
+            "avg_query_time": round(random.uniform(0.1, 0.8), 3),
+            "max_query_time": round(random.uniform(5.0, 15.0), 2),
+            "queries_per_second": round(random.uniform(100, 500), 1)
+        },
+        "connection_statistics": {
+            "active_connections": random.randint(20, 80),
+            "max_connections": 200,
+            "connection_usage_percentage": round(random.uniform(10, 40), 1),
+            "aborted_connections": random.randint(0, 5),
+            "threads_connected": random.randint(15, 75)
+        },
+        "table_statistics": {
+            "total_tables": random.randint(50, 150),
+            "largest_table_size_mb": round(random.uniform(500, 2000), 1),
+            "total_data_size_gb": round(random.uniform(10, 100), 2),
+            "fragmented_tables": random.randint(3, 15)
+        },
+        "index_statistics": {
+            "total_indexes": random.randint(200, 800),
+            "unused_indexes": random.randint(5, 25),
+            "duplicate_indexes": random.randint(2, 10),
+            "index_efficiency": round(random.uniform(75, 95), 1)
+        },
+        "generated_at": datetime.now().isoformat(),
+        "analysis_period": "last_24_hours"
+    }
+
 if __name__ == "__main__":
     print("🚀 启动MySQL性能调优Mock后端服务...")
     uvicorn.run(app, host="0.0.0.0", port=8000)
