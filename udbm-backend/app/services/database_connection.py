@@ -162,31 +162,38 @@ class DatabaseConnectionService:
     ) -> ConnectionResult:
         """
         测试MySQL数据库连接
-        注意：需要pymysql库支持
         """
         start_time = time.time()
 
         try:
-            # 这里需要导入pymysql
-            # import pymysql
-            # conn = pymysql.connect(
-            #     host=host,
-            #     port=port,
-            #     database=database,
-            #     user=username,
-            #     password=password,
-            #     connect_timeout=timeout
-            # )
+            import pymysql
+            
+            # 在线程池中执行同步连接测试
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None, 
+                DatabaseConnectionService._test_mysql_sync,
+                f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}",
+                timeout
+            )
+            
+            response_time = time.time() - start_time
+            
+            return ConnectionResult(
+                success=True,
+                message="MySQL连接成功",
+                response_time=response_time,
+                database_info=result
+            )
 
-            # 暂时返回模拟结果
+        except ImportError:
             response_time = time.time() - start_time
             return ConnectionResult(
                 success=False,
-                message="MySQL连接测试暂未实现",
+                message="MySQL连接失败",
                 response_time=response_time,
-                error_details="需要安装pymysql库"
+                error_details="pymysql库未安装，请运行: pip install pymysql"
             )
-
         except Exception as e:
             response_time = time.time() - start_time
             return ConnectionResult(
@@ -195,6 +202,73 @@ class DatabaseConnectionService:
                 response_time=response_time,
                 error_details=str(e)
             )
+
+    @staticmethod
+    def _test_mysql_sync(conn_string: str, timeout: int = 30) -> Dict[str, Any]:
+        """
+        同步测试MySQL连接并获取数据库信息
+        """
+        import pymysql
+        from urllib.parse import urlparse
+        
+        # 解析连接字符串
+        parsed = urlparse(conn_string)
+        
+        conn = None
+        try:
+            conn = pymysql.connect(
+                host=parsed.hostname,
+                port=parsed.port or 3306,
+                database=parsed.path.lstrip('/'),
+                user=parsed.username,
+                password=parsed.password,
+                connect_timeout=timeout,
+                charset='utf8mb4'
+            )
+            
+            with conn.cursor() as cursor:
+                # 获取MySQL版本
+                cursor.execute("SELECT VERSION()")
+                version = cursor.fetchone()[0]
+                
+                # 获取数据库大小
+                cursor.execute("""
+                    SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as db_size_mb
+                    FROM information_schema.tables 
+                    WHERE table_schema = %s
+                """, (parsed.path.lstrip('/'),))
+                db_size_result = cursor.fetchone()
+                db_size = db_size_result[0] if db_size_result and db_size_result[0] else 0
+                
+                # 获取活动连接数
+                cursor.execute("SHOW STATUS LIKE 'Threads_connected'")
+                active_connections_result = cursor.fetchone()
+                active_connections = int(active_connections_result[1]) if active_connections_result else 0
+                
+                # 获取表数量
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM information_schema.tables 
+                    WHERE table_schema = %s
+                """, (parsed.path.lstrip('/'),))
+                table_count = cursor.fetchone()[0]
+                
+                # 获取字符集
+                cursor.execute("SHOW VARIABLES LIKE 'character_set_database'")
+                charset_result = cursor.fetchone()
+                charset = charset_result[1] if charset_result else "unknown"
+
+            return {
+                "version": version,
+                "database_size": f"{db_size} MB",
+                "active_connections": active_connections,
+                "table_count": table_count,
+                "charset": charset
+            }
+
+        finally:
+            if conn:
+                conn.close()
 
     @staticmethod
     async def test_connection(

@@ -125,13 +125,13 @@ class DatabaseInstanceInitializer:
                     """
                 ),
                 {
-                    "name": "UDBM MySQL Database",
+                    "name": "MySQL",
                     "type_id": type_id,
                     "host": "localhost",
                     "port": 3306,
                     "database_name": "udbm_mysql_demo",
-                    "username": "root",
-                    "password": "password",
+                    "username": "udbm_mysql_user",
+                    "password": "udbm_mysql_password",
                     "environment": "development",
                     "status": "active",
                     "health_status": "unknown",

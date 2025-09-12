@@ -194,7 +194,11 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
           color: 'white',
           fontSize: '18px',
           fontWeight: 'bold',
-          borderBottom: '1px solid #1f1f1f'
+          background: 'linear-gradient(135deg, #1f1f1f 0%, #2c2c2c 100%)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+          transition: 'all 0.3s ease'
         }}>
           {collapsed ? 'U' : 'UDBM'}
         </div>
@@ -295,7 +299,7 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
               <div className="logo" style={{
                 height: '32px',
                 margin: 0,
-                background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                background: 'linear-gradient(135deg, #1f1f1f 0%, #2c2c2c 100%)',
                 borderRadius: '6px',
                 display: 'flex',
                 alignItems: 'center',
@@ -303,7 +307,10 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
                 fontSize: '14px',
                 fontWeight: 'bold',
                 color: 'white',
-                padding: '0 12px'
+                padding: '0 12px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                transition: 'all 0.3s ease'
               }}>
                 UDBM
               </div>

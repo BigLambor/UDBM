@@ -49,7 +49,7 @@ class DatabaseInstance(Base, TimestampMixin, UserMixin):
     health_status: Mapped[str] = mapped_column(String(20), default='unknown', nullable=False)
 
     # 外键关系
-    creator = relationship("User", back_populates="created_databases", foreign_keys="[DatabaseInstance.created_by]")
+    # creator = relationship("User", back_populates="created_databases", foreign_keys="[DatabaseInstance.created_by]")
 
     # 性能调优相关关系
     slow_queries = relationship("SlowQuery", back_populates="database")

@@ -26,11 +26,11 @@ class User(Base, TimestampMixin, UserMixin):
     last_login_at: Mapped[TIMESTAMP] = mapped_column(TIMESTAMP, nullable=True)
 
     # 关联关系
-    created_databases = relationship(
-        "DatabaseInstance",
-        back_populates="creator",
-        foreign_keys="DatabaseInstance.created_by"
-    )
+    # created_databases = relationship(
+    #     "DatabaseInstance",
+    #     back_populates="creator",
+    #     foreign_keys="DatabaseInstance.created_by"
+    # )
     
 
 

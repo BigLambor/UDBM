@@ -26,6 +26,7 @@ FRONTEND_PORT=3000
 DOCKER_MODE=false
 VERBOSE=false
 SKIP_CHECKS=false
+FORCE_CLEANUP=false
 
 # 进程ID文件
 PID_DIR="$PROJECT_ROOT/.pids"
@@ -60,6 +61,7 @@ show_help() {
     echo "  -p, --port      指定端口 (后端:8000 前端:3000)"
     echo "  -v, --verbose   详细输出"
     echo "  -s, --skip      跳过环境检查"
+    echo "  --force         强制清理占用端口的进程"
     echo "  -h, --help      显示帮助信息"
     echo ""
     echo -e "${BLUE}示例:${NC}"
@@ -120,10 +122,17 @@ check_command() {
 check_port() {
     local port="$1"
     local name="$2"
+    local force_clear="${3:-false}"
 
     if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
-        log "WARN" "$name 端口 $port 已被占用"
-        return 1
+        if [ "$force_clear" = true ]; then
+            log "WARN" "$name 端口 $port 已被占用，正在强制清理..."
+            force_kill_port $port "$name"
+            return $?
+        else
+            log "WARN" "$name 端口 $port 已被占用"
+            return 1
+        fi
     fi
     log "DEBUG" "$name 端口 $port 可用"
     return 0
@@ -234,9 +243,13 @@ check_docker_dependencies() {
 start_backend() {
     log "INFO" "启动后端服务..."
 
-    # 检查端口
-    if ! check_port $BACKEND_PORT "后端"; then
-        log "ERROR" "后端端口 $BACKEND_PORT 已被占用"
+    # 检查端口，根据FORCE_CLEANUP决定是否强制清理
+    if ! check_port $BACKEND_PORT "后端" $FORCE_CLEANUP; then
+        if [ "$FORCE_CLEANUP" = true ]; then
+            log "ERROR" "无法清理后端端口 $BACKEND_PORT"
+        else
+            log "ERROR" "后端端口 $BACKEND_PORT 已被占用，使用 --force 选项强制清理"
+        fi
         return 1
     fi
 
@@ -270,9 +283,13 @@ start_backend() {
 start_frontend() {
     log "INFO" "启动前端服务..."
 
-    # 检查端口
-    if ! check_port $FRONTEND_PORT "前端"; then
-        log "ERROR" "前端端口 $FRONTEND_PORT 已被占用"
+    # 检查端口，根据FORCE_CLEANUP决定是否强制清理
+    if ! check_port $FRONTEND_PORT "前端" $FORCE_CLEANUP; then
+        if [ "$FORCE_CLEANUP" = true ]; then
+            log "ERROR" "无法清理前端端口 $FRONTEND_PORT"
+        else
+            log "ERROR" "前端端口 $FRONTEND_PORT 已被占用，使用 --force 选项强制清理"
+        fi
         return 1
     fi
 
@@ -304,6 +321,40 @@ start_frontend() {
     wait_for_port $FRONTEND_PORT
 }
 
+# 强制停止占用端口的进程
+force_kill_port() {
+    local port="$1"
+    local service_name="$2"
+    
+    local pids=$(lsof -ti :$port 2>/dev/null)
+    if [ -n "$pids" ]; then
+        log "INFO" "发现占用$service_name端口 $port 的进程: $pids"
+        for pid in $pids; do
+            if kill -0 $pid 2>/dev/null; then
+                log "INFO" "终止进程 $pid (占用$service_name端口 $port)"
+                kill -TERM $pid 2>/dev/null
+                sleep 2
+                # 如果进程仍然存在，强制杀死
+                if kill -0 $pid 2>/dev/null; then
+                    log "WARN" "进程 $pid 未响应TERM信号，使用KILL信号"
+                    kill -KILL $pid 2>/dev/null
+                fi
+            fi
+        done
+        # 再次检查端口是否已释放
+        sleep 1
+        if lsof -ti :$port >/dev/null 2>&1; then
+            log "ERROR" "$service_name端口 $port 仍被占用"
+            return 1
+        else
+            log "INFO" "$service_name端口 $port 已释放"
+        fi
+    else
+        log "DEBUG" "$service_name端口 $port 未被占用"
+    fi
+    return 0
+}
+
 # 停止后端服务
 stop_backend() {
     log "INFO" "停止后端服务..."
@@ -318,18 +369,24 @@ stop_backend() {
             log "WARN" "未找到Docker后端服务进程"
         fi
     else
+        # 首先尝试通过PID文件停止
         if [ -f "$BACKEND_PID_FILE" ]; then
             local backend_pid=$(cat "$BACKEND_PID_FILE")
             if kill -0 $backend_pid 2>/dev/null; then
-                kill $backend_pid
-                log "INFO" "后端服务已停止 (PID: $backend_pid)"
-            else
-                log "WARN" "后端服务进程已不存在"
+                log "INFO" "通过PID文件停止后端服务 (PID: $backend_pid)"
+                kill -TERM $backend_pid 2>/dev/null
+                sleep 2
+                # 检查进程是否仍然存在
+                if kill -0 $backend_pid 2>/dev/null; then
+                    log "WARN" "后端进程未响应TERM信号，使用KILL信号"
+                    kill -KILL $backend_pid 2>/dev/null
+                fi
             fi
             rm -f "$BACKEND_PID_FILE"
-        else
-            log "WARN" "未找到后端服务PID文件"
         fi
+        
+        # 强制清理占用后端端口的所有进程
+        force_kill_port $BACKEND_PORT "后端"
     fi
 }
 
@@ -337,18 +394,24 @@ stop_backend() {
 stop_frontend() {
     log "INFO" "停止前端服务..."
 
+    # 首先尝试通过PID文件停止
     if [ -f "$FRONTEND_PID_FILE" ]; then
         local frontend_pid=$(cat "$FRONTEND_PID_FILE")
         if kill -0 $frontend_pid 2>/dev/null; then
-            kill $frontend_pid
-            log "INFO" "前端服务已停止 (PID: $frontend_pid)"
-        else
-            log "WARN" "前端服务进程已不存在"
+            log "INFO" "通过PID文件停止前端服务 (PID: $frontend_pid)"
+            kill -TERM $frontend_pid 2>/dev/null
+            sleep 2
+            # 检查进程是否仍然存在
+            if kill -0 $frontend_pid 2>/dev/null; then
+                log "WARN" "前端进程未响应TERM信号，使用KILL信号"
+                kill -KILL $frontend_pid 2>/dev/null
+            fi
         fi
         rm -f "$FRONTEND_PID_FILE"
-    else
-        log "WARN" "未找到前端服务PID文件"
     fi
+    
+    # 强制清理占用前端端口的所有进程
+    force_kill_port $FRONTEND_PORT "前端"
 }
 
 # 显示服务状态
@@ -505,6 +568,10 @@ main() {
                 ;;
             -s|--skip)
                 SKIP_CHECKS=true
+                shift
+                ;;
+            --force)
+                FORCE_CLEANUP=true
                 shift
                 ;;
             start|stop|restart|status|logs|clean)
