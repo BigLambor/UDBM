@@ -39,6 +39,7 @@ from app.services.performance_tuning import (
     SlowQueryAnalyzer, SystemMonitor, TuningExecutor, ExecutionPlanAnalyzer
 )
 from app.services.performance_tuning.postgres_config_optimizer import PostgreSQLConfigOptimizer
+from app.services.performance_tuning.mysql_enhanced_optimizer import MySQLEnhancedOptimizer
 from app.services.db_providers.registry import get_provider
 
 router = APIRouter()
@@ -83,6 +84,11 @@ def get_execution_plan_analyzer(session: Session = Depends(get_sync_db_session))
 def get_postgres_config_optimizer(session: Session = Depends(get_sync_db_session)) -> PostgreSQLConfigOptimizer:
     """获取PostgreSQL配置优化器实例"""
     return PostgreSQLConfigOptimizer(session)
+
+
+def get_mysql_enhanced_optimizer(session: Session = Depends(get_sync_db_session)) -> MySQLEnhancedOptimizer:
+    """获取MySQL增强优化器实例"""
+    return MySQLEnhancedOptimizer(session)
 
 
 @router.get("/dashboard/{database_id}", response_model=PerformanceDashboardResponse)
@@ -1164,10 +1170,409 @@ def _assess_postgres_health(metrics: Dict[str, Any]) -> Dict[str, Any]:
         health_status = "critical"
         description = "PostgreSQL运行状况严重，需要立即处理"
 
+        return {
+            "status": health_status,
+            "description": description,
+            "performance_score": performance_score,
+            "bottlenecks_count": len(bottlenecks),
+            "critical_issues": len([b for b in bottlenecks if b["severity"] == "critical"])
+        }
+
+
+# =====================================
+# MySQL 增强调优 API 接口
+# =====================================
+
+@router.get("/mysql/config-analysis/{database_id}")
+async def analyze_mysql_config(
+    database_id: int,
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """分析MySQL配置"""
+    try:
+        analysis = optimizer.analyze_configuration(database_id)
+        return analysis
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL配置分析失败: {str(e)}")
+
+
+@router.get("/mysql/storage-engine-analysis/{database_id}")
+async def analyze_mysql_storage_engine(
+    database_id: int,
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """分析MySQL存储引擎优化"""
+    try:
+        analysis = optimizer.analyze_storage_engine_optimization(database_id)
+        return analysis
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL存储引擎分析失败: {str(e)}")
+
+
+@router.get("/mysql/hardware-analysis/{database_id}")
+async def analyze_mysql_hardware(
+    database_id: int,
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """分析MySQL硬件优化建议"""
+    try:
+        analysis = optimizer.analyze_hardware_optimization(database_id)
+        return analysis
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL硬件分析失败: {str(e)}")
+
+
+@router.get("/mysql/security-analysis/{database_id}")
+async def analyze_mysql_security(
+    database_id: int,
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """分析MySQL安全配置优化"""
+    try:
+        analysis = optimizer.analyze_security_optimization(database_id)
+        return analysis
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL安全分析失败: {str(e)}")
+
+
+@router.get("/mysql/replication-analysis/{database_id}")
+async def analyze_mysql_replication(
+    database_id: int,
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """分析MySQL主从复制优化"""
+    try:
+        analysis = optimizer.analyze_replication_optimization(database_id)
+        return analysis
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL复制分析失败: {str(e)}")
+
+
+@router.get("/mysql/partition-analysis/{database_id}")
+async def analyze_mysql_partition(
+    database_id: int,
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """分析MySQL分区表优化"""
+    try:
+        analysis = optimizer.analyze_partition_optimization(database_id)
+        return analysis
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL分区分析失败: {str(e)}")
+
+
+@router.get("/mysql/backup-analysis/{database_id}")
+async def analyze_mysql_backup(
+    database_id: int,
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """分析MySQL备份恢复策略"""
+    try:
+        analysis = optimizer.analyze_backup_recovery_optimization(database_id)
+        return analysis
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL备份分析失败: {str(e)}")
+
+
+@router.post("/mysql/generate-tuning-script/{database_id}")
+async def generate_mysql_tuning_script(
+    database_id: int,
+    optimization_areas: List[str] = Query(default=None, description="优化区域: config, storage, security, replication"),
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """生成MySQL性能调优脚本"""
+    try:
+        script = optimizer.generate_comprehensive_tuning_script(database_id, optimization_areas)
+        return {
+            "tuning_script": script,
+            "generated_at": datetime.now().isoformat(),
+            "database_id": database_id,
+            "optimization_areas": optimization_areas or ["config", "storage", "security", "replication"],
+            "description": "MySQL综合性能调优脚本，包含多维度优化配置"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL调优脚本生成失败: {str(e)}")
+
+
+@router.get("/mysql/optimization-summary/{database_id}")
+async def get_mysql_optimization_summary(
+    database_id: int,
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """获取MySQL优化总结"""
+    try:
+        summary = optimizer.get_optimization_summary(database_id)
+        return summary
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL优化总结生成失败: {str(e)}")
+
+
+@router.post("/mysql/comprehensive-analysis/{database_id}")
+async def comprehensive_mysql_analysis(
+    database_id: int,
+    include_areas: List[str] = Query(
+        default=["config", "storage", "hardware", "security", "replication", "partition", "backup"],
+        description="包含的分析区域"
+    ),
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """MySQL综合分析 - 一次性获取所有维度的分析结果"""
+    try:
+        comprehensive_analysis = {
+            "database_id": database_id,
+            "analysis_timestamp": datetime.now().isoformat(),
+            "included_areas": include_areas,
+            "analysis_results": {}
+        }
+        
+        if "config" in include_areas:
+            comprehensive_analysis["analysis_results"]["config"] = optimizer.analyze_configuration(database_id)
+            
+        if "storage" in include_areas:
+            comprehensive_analysis["analysis_results"]["storage"] = optimizer.analyze_storage_engine_optimization(database_id)
+            
+        if "hardware" in include_areas:
+            comprehensive_analysis["analysis_results"]["hardware"] = optimizer.analyze_hardware_optimization(database_id)
+            
+        if "security" in include_areas:
+            comprehensive_analysis["analysis_results"]["security"] = optimizer.analyze_security_optimization(database_id)
+            
+        if "replication" in include_areas:
+            comprehensive_analysis["analysis_results"]["replication"] = optimizer.analyze_replication_optimization(database_id)
+            
+        if "partition" in include_areas:
+            comprehensive_analysis["analysis_results"]["partition"] = optimizer.analyze_partition_optimization(database_id)
+            
+        if "backup" in include_areas:
+            comprehensive_analysis["analysis_results"]["backup"] = optimizer.analyze_backup_recovery_optimization(database_id)
+        
+        # 生成综合总结
+        comprehensive_analysis["summary"] = optimizer.get_optimization_summary(database_id)
+        
+        return comprehensive_analysis
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL综合分析失败: {str(e)}")
+
+
+@router.get("/mysql/performance-insights/{database_id}")
+async def get_mysql_performance_insights(
+    database_id: int,
+    monitor: SystemMonitor = Depends(get_system_monitor),
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """获取MySQL性能洞察"""
+    try:
+        # 获取最新指标
+        latest_metrics = monitor.get_latest_metrics(database_id)
+        
+        # 获取配置分析
+        config_analysis = optimizer.analyze_configuration(database_id)
+        
+        # 获取优化总结
+        optimization_summary = optimizer.get_optimization_summary(database_id)
+        
+        # 生成综合洞察
+        insights = {
+            "database_id": database_id,
+            "performance_score": optimization_summary.get("overall_health_score", 70.0),
+            "bottlenecks": _identify_mysql_bottlenecks(latest_metrics, config_analysis),
+            "optimization_opportunities": _generate_mysql_optimization_opportunities(
+                latest_metrics, config_analysis, optimization_summary
+            ),
+            "health_status": _assess_mysql_health(optimization_summary),
+            "key_metrics": {
+                "cpu_usage": latest_metrics.get("cpu", {}).get("usage_percent", 0),
+                "memory_usage": latest_metrics.get("memory", {}).get("usage_percent", 0),
+                "active_connections": latest_metrics.get("connections", {}).get("active", 0),
+                "qps": latest_metrics.get("throughput", {}).get("qps", 0)
+            },
+            "generated_at": datetime.now().isoformat()
+        }
+        
+        return insights
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL性能洞察生成失败: {str(e)}")
+
+
+@router.post("/mysql/quick-optimization/{database_id}")
+async def quick_mysql_optimization(
+    database_id: int,
+    focus_area: str = Query("performance", description="优化重点: performance, security, reliability"),
+    optimizer: MySQLEnhancedOptimizer = Depends(get_mysql_enhanced_optimizer)
+):
+    """MySQL快速优化建议"""
+    try:
+        # 根据重点区域提供针对性建议
+        quick_recommendations = []
+        
+        if focus_area == "performance":
+            config_analysis = optimizer.analyze_configuration(database_id)
+            storage_analysis = optimizer.analyze_storage_engine_optimization(database_id)
+            
+            # 提取高影响性能建议
+            for rec in config_analysis.get("recommendations", []):
+                if rec.get("impact") == "high":
+                    quick_recommendations.append({
+                        "category": "配置优化",
+                        "action": rec.get("description"),
+                        "impact": "high",
+                        "estimated_improvement": rec.get("estimated_improvement"),
+                        "sql": f"SET GLOBAL {rec.get('parameter')} = {rec.get('recommended_value')};"
+                    })
+            
+        elif focus_area == "security":
+            security_analysis = optimizer.analyze_security_optimization(database_id)
+            
+            # 提取高危安全建议
+            for category in security_analysis.values():
+                if isinstance(category, dict) and "recommendations" in category:
+                    for rec in category["recommendations"]:
+                        if rec.get("severity") == "high":
+                            quick_recommendations.append({
+                                "category": "安全加固",
+                                "action": rec.get("solution"),
+                                "impact": "critical",
+                                "sql": rec.get("sql", "-- 需要手动配置")
+                            })
+                            
+        elif focus_area == "reliability":
+            replication_analysis = optimizer.analyze_replication_optimization(database_id)
+            backup_analysis = optimizer.analyze_backup_recovery_optimization(database_id)
+            
+            # 提取可靠性建议
+            for rec in backup_analysis.get("optimization_recommendations", []):
+                if rec.get("severity") in ["high", "medium"]:
+                    quick_recommendations.append({
+                        "category": "可靠性提升",
+                        "action": rec.get("solution"),
+                        "impact": rec.get("severity"),
+                        "benefits": rec.get("benefits", [])
+                    })
+        
+        return {
+            "database_id": database_id,
+            "focus_area": focus_area,
+            "quick_recommendations": quick_recommendations[:5],  # 前5个建议
+            "generated_at": datetime.now().isoformat(),
+            "next_steps": [
+                "执行高优先级建议",
+                "监控性能变化",
+                "定期评估优化效果"
+            ]
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MySQL快速优化失败: {str(e)}")
+
+
+def _identify_mysql_bottlenecks(metrics: Dict[str, Any], config_analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """识别MySQL性能瓶颈"""
+    bottlenecks = []
+    
+    # CPU瓶颈
+    cpu_usage = metrics.get("cpu", {}).get("usage_percent", 0)
+    if cpu_usage > 80:
+        bottlenecks.append({
+            "type": "cpu",
+            "severity": "high" if cpu_usage > 90 else "medium",
+            "description": f"CPU使用率过高 ({cpu_usage:.1f}%)",
+            "impact": "查询响应时间增加"
+        })
+    
+    # 内存瓶颈
+    memory_usage = metrics.get("memory", {}).get("usage_percent", 0)
+    if memory_usage > 85:
+        bottlenecks.append({
+            "type": "memory",
+            "severity": "high" if memory_usage > 95 else "medium",
+            "description": f"内存使用率过高 ({memory_usage:.1f}%)",
+            "impact": "可能导致swap使用，严重影响性能"
+        })
+    
+    # 连接瓶颈
+    active_connections = metrics.get("connections", {}).get("active", 0)
+    max_connections = metrics.get("connections", {}).get("max_connections", 100)
+    if active_connections > max_connections * 0.8:
+        bottlenecks.append({
+            "type": "connections",
+            "severity": "medium",
+            "description": f"连接数接近上限 ({active_connections}/{max_connections})",
+            "impact": "新连接可能被拒绝"
+        })
+    
+    return bottlenecks
+
+
+def _generate_mysql_optimization_opportunities(
+    metrics: Dict[str, Any],
+    config_analysis: Dict[str, Any],
+    optimization_summary: Dict[str, Any]
+) -> List[Dict[str, Any]]:
+    """生成MySQL优化机会"""
+    opportunities = []
+    
+    # 配置优化机会
+    optimization_score = config_analysis.get("optimization_score", 100)
+    if optimization_score < 80:
+        opportunities.append({
+            "type": "configuration",
+            "title": "配置参数优化",
+            "description": "MySQL配置参数存在优化空间",
+            "estimated_benefit": "20-40% 性能提升",
+            "effort": "medium"
+        })
+    
+    # 高影响建议数量
+    high_impact_count = optimization_summary.get("optimization_statistics", {}).get("high_impact_recommendations", 0)
+    if high_impact_count > 3:
+        opportunities.append({
+            "type": "high_impact_tuning",
+            "title": "高影响调优",
+            "description": f"发现 {high_impact_count} 个高影响优化建议",
+            "estimated_benefit": "30-60% 性能提升",
+            "effort": "medium"
+        })
+    
+    # 安全问题
+    critical_security = optimization_summary.get("optimization_statistics", {}).get("critical_security_issues", 0)
+    if critical_security > 0:
+        opportunities.append({
+            "type": "security",
+            "title": "安全配置加固",
+            "description": f"发现 {critical_security} 个严重安全配置问题",
+            "estimated_benefit": "显著提高系统安全性",
+            "effort": "high"
+        })
+    
+    return opportunities
+
+
+def _assess_mysql_health(optimization_summary: Dict[str, Any]) -> Dict[str, Any]:
+    """评估MySQL整体健康状况"""
+    health_score = optimization_summary.get("overall_health_score", 70.0)
+    critical_issues = optimization_summary.get("optimization_statistics", {}).get("critical_security_issues", 0)
+    
+    if health_score >= 90 and critical_issues == 0:
+        health_status = "excellent"
+        description = "MySQL运行状况优秀"
+    elif health_score >= 75 and critical_issues <= 1:
+        health_status = "good"
+        description = "MySQL运行状况良好"
+    elif health_score >= 60:
+        health_status = "fair"
+        description = "MySQL运行状况一般，需要关注"
+    elif health_score >= 40:
+        health_status = "poor"
+        description = "MySQL运行状况较差，需要优化"
+    else:
+        health_status = "critical"
+        description = "MySQL运行状况严重，需要立即处理"
+    
     return {
         "status": health_status,
         "description": description,
-        "performance_score": performance_score,
-        "bottlenecks_count": len(bottlenecks),
-        "critical_issues": len([b for b in bottlenecks if b["severity"] == "critical"])
+        "health_score": health_score,
+        "critical_issues": critical_issues
     }
