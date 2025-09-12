@@ -141,6 +141,61 @@ async def health_check():
         "service": "UDBM Mock Backend"
     }
 
+# 数据库列表接口
+@app.get("/api/v1/databases/")
+async def get_databases():
+    """获取数据库列表"""
+    return [
+        {
+            "id": 1,
+            "name": "prod-postgres-01",
+            "type": "postgresql",
+            "host": "192.168.1.100",
+            "port": 5432,
+            "database_name": "production_db",
+            "username": "postgres",
+            "status": "active",
+            "created_at": "2024-01-15T10:30:00Z",
+            "updated_at": datetime.now().isoformat()
+        },
+        {
+            "id": 2,
+            "name": "prod-mysql-01",
+            "type": "mysql",
+            "host": "192.168.1.101",
+            "port": 3306,
+            "database_name": "production_db",
+            "username": "mysql",
+            "status": "active",
+            "created_at": "2024-01-15T11:00:00Z",
+            "updated_at": datetime.now().isoformat()
+        },
+        {
+            "id": 3,
+            "name": "test-postgres-01",
+            "type": "postgresql",
+            "host": "192.168.1.102",
+            "port": 5432,
+            "database_name": "test_db",
+            "username": "postgres",
+            "status": "active",
+            "created_at": "2024-01-16T09:15:00Z",
+            "updated_at": datetime.now().isoformat()
+        },
+        {
+            "id": 4,
+            "name": "test-mysql-01",
+            "type": "mysql",
+            "host": "192.168.1.103",
+            "port": 3306,
+            "database_name": "test_db",
+            "username": "mysql",
+            "status": "active",
+            "created_at": "2024-01-16T09:30:00Z",
+            "updated_at": datetime.now().isoformat()
+        }
+    ]
+
 # MySQL性能调优接口
 @app.get("/api/v1/performance/mysql/config-analysis/{database_id}")
 async def mysql_config_analysis(database_id: int):
