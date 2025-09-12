@@ -483,12 +483,34 @@ const MySQLMetrics = ({
   const effectiveMysqlInsights = mysqlInsights || generateMockMySQLData();
   const effectiveConfigAnalysis = configAnalysis || generateMockConfigAnalysis();
   
+  // 自动加载MySQL数据（如果还没有数据）
+  useEffect(() => {
+    if (!mysqlInsights && !configAnalysis && !optimizationSummary && database?.id) {
+      // 自动调用MySQL性能洞察API
+      const fetchMySQLData = async () => {
+        try {
+          const insights = await performanceAPI.getMySQLPerformanceInsights(database.id);
+          setMysqlInsights(insights);
+        } catch (error) {
+          console.warn('获取MySQL性能洞察失败，使用Mock数据:', error);
+          setMysqlInsights(effectiveMysqlInsights);
+        }
+        
+        try {
+          const config = await performanceAPI.analyzeMySQLConfig(database.id);
+          setConfigAnalysis(config);
+        } catch (error) {
+          console.warn('获取MySQL配置分析失败，使用Mock数据:', error);
+          setConfigAnalysis(effectiveConfigAnalysis);
+        }
+      };
+      
+      fetchMySQLData();
+    }
+  }, [database?.id, mysqlInsights, configAnalysis, optimizationSummary]);
+  
   if (!mysqlInsights && !configAnalysis && !optimizationSummary) {
-    // 显示Mock数据提示
-    setTimeout(() => {
-      setMysqlInsights(effectiveMysqlInsights);
-      setConfigAnalysis(effectiveConfigAnalysis);
-    }, 1500); // 模拟加载延迟
+    // 显示加载状态
     
     return (
       <div>
@@ -677,7 +699,7 @@ const MySQLMetrics = ({
             </Col>
           </Row>
 
-          {/* 关键指标 */}
+            {/* 关键指标 */}
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
             <Col xs={24}>
               <Card title={<><BarChartOutlined style={{ marginRight: 8 }} />关键指标</>}>
@@ -687,7 +709,10 @@ const MySQLMetrics = ({
                       title="CPU使用率"
                       value={effectiveMysqlInsights?.key_metrics?.cpu_usage || 0}
                       suffix="%"
-                      valueStyle={{ fontSize: '16px' }}
+                      valueStyle={{ 
+                        fontSize: '16px',
+                        color: (effectiveMysqlInsights?.key_metrics?.cpu_usage || 0) > 80 ? '#ff4d4f' : '#52c41a'
+                      }}
                     />
                   </Col>
                   <Col xs={12} md={6}>
@@ -695,7 +720,10 @@ const MySQLMetrics = ({
                       title="内存使用率"
                       value={effectiveMysqlInsights?.key_metrics?.memory_usage || 0}
                       suffix="%"
-                      valueStyle={{ fontSize: '16px' }}
+                      valueStyle={{ 
+                        fontSize: '16px',
+                        color: (effectiveMysqlInsights?.key_metrics?.memory_usage || 0) > 85 ? '#ff4d4f' : '#52c41a'
+                      }}
                     />
                   </Col>
                   <Col xs={12} md={6}>
@@ -713,6 +741,142 @@ const MySQLMetrics = ({
                     />
                   </Col>
                 </Row>
+                
+                {/* MySQL特有指标 */}
+                <Divider orientation="left">MySQL特有指标</Divider>
+                <Row gutter={[16, 16]}>
+                  <Col xs={12} md={6}>
+                    <Statistic
+                      title="InnoDB缓冲池命中率"
+                      value={effectiveMysqlInsights?.key_metrics?.innodb_buffer_pool_hit_ratio || 0}
+                      suffix="%"
+                      precision={2}
+                      valueStyle={{ 
+                        fontSize: '14px',
+                        color: (effectiveMysqlInsights?.key_metrics?.innodb_buffer_pool_hit_ratio || 0) >= 95 ? '#52c41a' : '#faad14'
+                      }}
+                    />
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <Statistic
+                      title="慢查询比率"
+                      value={effectiveMysqlInsights?.key_metrics?.slow_query_ratio || 0}
+                      suffix="%"
+                      precision={2}
+                      valueStyle={{ 
+                        fontSize: '14px',
+                        color: (effectiveMysqlInsights?.key_metrics?.slow_query_ratio || 0) > 5 ? '#ff4d4f' : '#52c41a'
+                      }}
+                    />
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <Statistic
+                      title="表锁等待比率"
+                      value={effectiveMysqlInsights?.key_metrics?.table_locks_waited_ratio || 0}
+                      suffix="%"
+                      precision={3}
+                      valueStyle={{ 
+                        fontSize: '14px',
+                        color: (effectiveMysqlInsights?.key_metrics?.table_locks_waited_ratio || 0) > 1 ? '#ff4d4f' : '#52c41a'
+                      }}
+                    />
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <Statistic
+                      title="磁盘临时表比率"
+                      value={effectiveMysqlInsights?.key_metrics?.tmp_tables_created_on_disk_ratio || 0}
+                      suffix="%"
+                      precision={1}
+                      valueStyle={{ 
+                        fontSize: '14px',
+                        color: (effectiveMysqlInsights?.key_metrics?.tmp_tables_created_on_disk_ratio || 0) > 25 ? '#ff4d4f' : '#52c41a'
+                      }}
+                    />
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <Statistic
+                      title="查询缓存命中率"
+                      value={effectiveMysqlInsights?.key_metrics?.qcache_hit_ratio || 0}
+                      suffix="%"
+                      precision={1}
+                      valueStyle={{ fontSize: '14px' }}
+                    />
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <Statistic
+                      title="MyISAM键缓存命中率"
+                      value={effectiveMysqlInsights?.key_metrics?.key_buffer_hit_ratio || 0}
+                      suffix="%"
+                      precision={2}
+                      valueStyle={{ fontSize: '14px' }}
+                    />
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <Statistic
+                      title="InnoDB死锁数"
+                      value={effectiveMysqlInsights?.key_metrics?.innodb_deadlocks || 0}
+                      valueStyle={{ 
+                        fontSize: '14px',
+                        color: (effectiveMysqlInsights?.key_metrics?.innodb_deadlocks || 0) > 50 ? '#ff4d4f' : '#52c41a'
+                      }}
+                    />
+                  </Col>
+                  <Col xs={12} md={6}>
+                    <Statistic
+                      title="运行线程数"
+                      value={effectiveMysqlInsights?.key_metrics?.threads_running || 0}
+                      valueStyle={{ fontSize: '14px' }}
+                    />
+                  </Col>
+                </Row>
+                
+                {/* 复制状态（如果启用）*/}
+                {effectiveMysqlInsights?.key_metrics?.replication_health_score && (
+                  <div>
+                    <Divider orientation="left">主从复制状态</Divider>
+                    <Row gutter={[16, 16]}>
+                      <Col xs={12} md={6}>
+                        <Statistic
+                          title="复制延迟"
+                          value={effectiveMysqlInsights?.key_metrics?.slave_lag_seconds || 0}
+                          suffix="秒"
+                          valueStyle={{ 
+                            fontSize: '14px',
+                            color: (effectiveMysqlInsights?.key_metrics?.slave_lag_seconds || 0) > 10 ? '#ff4d4f' : '#52c41a'
+                          }}
+                        />
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <div>
+                          <Text strong>SQL线程: </Text>
+                          <Tag color={effectiveMysqlInsights?.key_metrics?.slave_sql_running === 'Yes' ? 'green' : 'red'}>
+                            {effectiveMysqlInsights?.key_metrics?.slave_sql_running || 'Unknown'}
+                          </Tag>
+                        </div>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <div>
+                          <Text strong>IO线程: </Text>
+                          <Tag color={effectiveMysqlInsights?.key_metrics?.slave_io_running === 'Yes' ? 'green' : 'red'}>
+                            {effectiveMysqlInsights?.key_metrics?.slave_io_running || 'Unknown'}
+                          </Tag>
+                        </div>
+                      </Col>
+                      <Col xs={12} md={6}>
+                        <Statistic
+                          title="复制健康评分"
+                          value={effectiveMysqlInsights?.key_metrics?.replication_health_score || 0}
+                          suffix="/100"
+                          precision={1}
+                          valueStyle={{ 
+                            fontSize: '14px',
+                            color: getHealthStatusColor(effectiveMysqlInsights?.key_metrics?.replication_health_score || 0)
+                          }}
+                        />
+                      </Col>
+                    </Row>
+                  </div>
+                )}
               </Card>
             </Col>
           </Row>
