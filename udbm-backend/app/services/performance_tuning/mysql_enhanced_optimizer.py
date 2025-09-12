@@ -1653,121 +1653,242 @@ class MySQLEnhancedOptimizer:
         import random
         from datetime import datetime, timedelta
         
-        # 生成基础性能评分
+        # 生成基础性能评分（更真实的分布）
         base_score = random.uniform(65.0, 95.0)
         
-        # 生成性能瓶颈
+        # 生成MySQL版本信息
+        mysql_versions = ['8.0.35', '8.0.33', '8.0.32', '5.7.44', '5.7.42']
+        mysql_version = random.choice(mysql_versions)
+        
+        # 生成服务器规格信息
+        server_specs = [
+            {'cpu_cores': 4, 'memory_gb': 16, 'storage_type': 'SSD'},
+            {'cpu_cores': 8, 'memory_gb': 32, 'storage_type': 'SSD'},
+            {'cpu_cores': 16, 'memory_gb': 64, 'storage_type': 'NVMe'},
+            {'cpu_cores': 32, 'memory_gb': 128, 'storage_type': 'NVMe'}
+        ]
+        server_spec = random.choice(server_specs)
+        
+        # 生成更丰富的性能瓶颈
         potential_bottlenecks = [
             {
-                "type": "cpu_intensive_queries",
+                "type": "innodb_buffer_pool_pressure",
                 "severity": "high",
-                "description": "发现多个CPU密集型查询，平均CPU使用率85%",
-                "affected_queries": random.randint(15, 45),
-                "impact": "查询响应时间增加40-60%"
+                "description": f"InnoDB缓冲池命中率为{random.uniform(85.0, 92.0):.1f}%，建议增加缓冲池大小",
+                "current_value": f"{random.randint(1, 4)}G",
+                "recommended_value": f"{random.randint(6, 16)}G",
+                "impact": "频繁磁盘IO，查询性能下降30-50%",
+                "affected_tables": random.randint(15, 50),
+                "solution": "增加innodb_buffer_pool_size参数"
             },
             {
-                "type": "memory_pressure",
+                "type": "query_cache_inefficiency",
                 "severity": "medium", 
-                "description": "InnoDB缓冲池命中率偏低，仅为89.2%",
-                "current_value": "89.2%",
-                "target_value": ">95%",
-                "impact": "频繁磁盘IO，影响整体性能"
+                "description": f"查询缓存命中率仅为{random.uniform(60.0, 80.0):.1f}%，存在优化空间",
+                "qcache_hits": random.randint(1000000, 10000000),
+                "qcache_inserts": random.randint(500000, 5000000),
+                "impact": "重复查询未能有效利用缓存",
+                "solution": "优化查询缓存配置或考虑应用层缓存"
             },
             {
-                "type": "lock_contention",
+                "type": "tmp_table_on_disk",
                 "severity": "medium",
-                "description": "检测到表锁等待，平均等待时间120ms",
-                "waiting_threads": random.randint(5, 20),
-                "impact": "并发性能下降"
+                "description": f"磁盘临时表创建频繁，每小时{random.randint(500, 2000)}个",
+                "tmp_table_ratio": random.uniform(15.0, 35.0),
+                "impact": "内存临时表溢出到磁盘，影响查询性能",
+                "solution": "增加tmp_table_size和max_heap_table_size"
             },
             {
-                "type": "slow_disk_io",
-                "severity": "low",
-                "description": "磁盘IO延迟较高，平均响应时间8ms",
-                "current_latency": "8ms",
-                "recommended_latency": "<5ms",
-                "impact": "数据读写速度受限"
+                "type": "table_lock_contention",
+                "severity": "high",
+                "description": f"表锁等待严重，等待比率{random.uniform(2.0, 8.0):.2f}%",
+                "locks_waited": random.randint(1000, 10000),
+                "locks_immediate": random.randint(100000, 1000000),
+                "impact": "并发写操作性能下降",
+                "solution": "考虑使用InnoDB引擎替换MyISAM"
             },
             {
-                "type": "connection_pool_exhaustion",
+                "type": "slow_query_accumulation",
                 "severity": "critical",
-                "description": "连接池使用率达到95%，接近上限",
-                "current_connections": random.randint(180, 200),
-                "max_connections": 200,
-                "impact": "新连接可能被拒绝"
+                "description": f"慢查询积累严重，每分钟{random.uniform(5.0, 15.0):.1f}个慢查询",
+                "slow_query_count": random.randint(1000, 10000),
+                "avg_query_time": random.uniform(2.5, 8.0),
+                "impact": "系统响应时间显著增加",
+                "solution": "优化查询语句和索引设计"
+            },
+            {
+                "type": "connection_overhead",
+                "severity": "medium",
+                "description": f"连接创建开销大，线程缓存命中率{random.uniform(70.0, 85.0):.1f}%",
+                "threads_created": random.randint(5000, 50000),
+                "connections": random.randint(100000, 1000000),
+                "impact": "连接建立延迟增加",
+                "solution": "增加thread_cache_size参数"
+            },
+            {
+                "type": "replication_lag",
+                "severity": "high" if random.choice([True, False]) else "medium",
+                "description": f"主从复制延迟{random.randint(10, 60)}秒",
+                "slave_lag_seconds": random.randint(10, 60),
+                "binlog_size": f"{random.randint(500, 2000)}MB",
+                "impact": "从库数据延迟，影响读写分离效果",
+                "solution": "优化网络和binlog配置"
+            } if random.choice([True, False, False]) else None,  # 30%概率有复制问题
+            {
+                "type": "innodb_deadlock_frequency",
+                "severity": "medium",
+                "description": f"InnoDB死锁频繁，每小时{random.randint(20, 100)}次",
+                "deadlock_count": random.randint(100, 1000),
+                "impact": "事务回滚，影响应用稳定性",
+                "solution": "优化事务逻辑和索引设计"
             }
         ]
         
-        # 随机选择2-4个瓶颈
-        selected_bottlenecks = random.sample(potential_bottlenecks, random.randint(2, 4))
+        # 过滤掉None值并随机选择2-4个瓶颈
+        potential_bottlenecks = [b for b in potential_bottlenecks if b is not None]
+        selected_bottlenecks = random.sample(potential_bottlenecks, random.randint(2, min(4, len(potential_bottlenecks))))
         
-        # 生成优化机会
+        # 生成更详细的优化机会
         optimization_opportunities = [
+            {
+                "type": "innodb_buffer_pool_optimization",
+                "title": "InnoDB缓冲池优化",
+                "description": f"当前缓冲池{random.randint(1, 4)}G，建议增加到{random.randint(6, 16)}G",
+                "estimated_benefit": "30-60% 查询性能提升",
+                "effort": "low",
+                "immediate_impact": True,
+                "priority": "high",
+                "parameters": ["innodb_buffer_pool_size", "innodb_buffer_pool_instances"],
+                "current_hit_ratio": f"{random.uniform(85.0, 92.0):.1f}%",
+                "target_hit_ratio": ">95%"
+            },
             {
                 "type": "index_optimization",
                 "title": "索引优化机会",
-                "description": "发现23个慢查询可通过添加索引优化",
-                "estimated_benefit": "60-80% 查询性能提升",
+                "description": f"发现{random.randint(15, 35)}个慢查询可通过添加索引优化",
+                "estimated_benefit": "50-80% 查询性能提升",
                 "effort": "medium",
-                "tables_affected": ["user_activity", "order_details", "product_reviews"],
-                "priority": "high"
+                "tables_affected": [f"table_{i}" for i in range(1, random.randint(5, 12))],
+                "priority": "high",
+                "missing_indexes": random.randint(8, 20),
+                "redundant_indexes": random.randint(2, 8)
             },
             {
-                "type": "query_rewriting",
-                "title": "查询重写优化",
-                "description": "发现12个可优化的复杂JOIN查询",
-                "estimated_benefit": "30-50% 查询性能提升", 
-                "effort": "high",
-                "complexity": "需要业务逻辑调整",
-                "priority": "medium"
+                "type": "query_cache_optimization",
+                "title": "查询缓存优化",
+                "description": f"查询缓存命中率{random.uniform(60.0, 80.0):.1f}%，存在优化空间",
+                "estimated_benefit": "20-40% 重复查询性能提升",
+                "effort": "low",
+                "priority": "medium",
+                "current_cache_size": f"{random.randint(64, 512)}M",
+                "recommended_cache_size": f"{random.randint(256, 1024)}M",
+                "note": "MySQL 8.0已移除查询缓存，建议使用应用层缓存"
             },
+            {
+                "type": "tmp_table_optimization",
+                "title": "临时表优化",
+                "description": f"磁盘临时表比率{random.uniform(15.0, 35.0):.1f}%，建议增加内存临时表大小",
+                "estimated_benefit": "25-45% 复杂查询性能提升",
+                "effort": "low",
+                "priority": "medium",
+                "parameters": ["tmp_table_size", "max_heap_table_size"],
+                "current_tmp_table_size": f"{random.randint(16, 128)}M",
+                "recommended_tmp_table_size": f"{random.randint(256, 512)}M"
+            },
+            {
+                "type": "connection_pooling_optimization",
+                "title": "连接池优化",
+                "description": f"线程缓存命中率{random.uniform(70.0, 85.0):.1f}%，建议优化连接管理",
+                "estimated_benefit": "10-20% 连接建立性能提升",
+                "effort": "low",
+                "priority": "medium",
+                "parameters": ["thread_cache_size", "max_connections"],
+                "current_thread_cache": random.randint(8, 64),
+                "recommended_thread_cache": random.randint(128, 256)
+            },
+            {
+                "type": "storage_engine_optimization",
+                "title": "存储引擎优化",
+                "description": "部分表仍使用MyISAM引擎，建议迁移到InnoDB",
+                "estimated_benefit": "40-70% 并发性能提升",
+                "effort": "high",
+                "priority": "medium",
+                "myisam_tables": random.randint(3, 15),
+                "migration_complexity": "需要停机维护",
+                "benefits": ["行级锁", "事务支持", "崩溃恢复"]
+            },
+            {
+                "type": "replication_optimization",
+                "title": "主从复制优化",
+                "description": f"复制延迟{random.randint(5, 30)}秒，建议优化复制配置",
+                "estimated_benefit": "显著减少复制延迟",
+                "effort": "medium",
+                "priority": "high" if random.choice([True, False]) else "medium",
+                "parameters": ["slave_parallel_workers", "binlog_format", "sync_binlog"],
+                "current_lag": f"{random.randint(5, 30)}秒",
+                "target_lag": "<5秒"
+            } if random.choice([True, False, False]) else None,  # 30%概率有复制问题
             {
                 "type": "partition_strategy",
-                "title": "分区表策略",
-                "description": "大表建议实施分区策略，减少查询扫描范围",
-                "estimated_benefit": "40-70% 大表查询提升",
+                "title": "表分区策略",
+                "description": f"大表{random.randint(3, 8)}个建议实施分区策略",
+                "estimated_benefit": "60-85% 大表查询提升",
                 "effort": "high",
-                "tables_suggested": ["transaction_log", "user_events"],
-                "priority": "medium"
+                "priority": "medium",
+                "candidate_tables": [f"large_table_{i}" for i in range(1, random.randint(4, 9))],
+                "partition_types": ["RANGE", "HASH", "LIST"],
+                "maintenance_required": True
             },
             {
-                "type": "cache_layer",
-                "title": "缓存层优化",
-                "description": "建议引入Redis缓存层，减少数据库压力",
-                "estimated_benefit": "50-80% 读取性能提升",
-                "effort": "high",
-                "infrastructure_change": True,
-                "priority": "low"
-            },
-            {
-                "type": "configuration_tuning",
-                "title": "配置参数调优",
-                "description": "18个配置参数可进一步优化",
-                "estimated_benefit": "20-40% 整体性能提升",
-                "effort": "low",
-                "immediate_impact": True,
-                "priority": "high"
+                "type": "security_hardening",
+                "title": "安全配置加固",
+                "description": f"发现{random.randint(3, 12)}个安全配置问题",
+                "estimated_benefit": "显著提高系统安全性",
+                "effort": "medium",
+                "priority": "high",
+                "security_issues": random.randint(3, 12),
+                "critical_issues": random.randint(0, 3),
+                "areas": ["用户权限", "网络安全", "数据加密", "审计日志"]
             }
         ]
         
-        # 随机选择3-5个优化机会
-        selected_opportunities = random.sample(optimization_opportunities, random.randint(3, 5))
+        # 过滤掉None值并随机选择3-6个优化机会
+        optimization_opportunities = [op for op in optimization_opportunities if op is not None]
+        selected_opportunities = random.sample(optimization_opportunities, random.randint(3, min(6, len(optimization_opportunities))))
         
-        # 生成健康状态评估
+        # 生成增强的健康状态评估
         health_factors = {
-            "cpu_utilization": random.uniform(45.0, 85.0),
-            "memory_usage": random.uniform(60.0, 90.0), 
-            "disk_io_utilization": random.uniform(30.0, 70.0),
-            "connection_efficiency": random.uniform(75.0, 95.0),
-            "query_performance": random.uniform(70.0, 90.0),
-            "replication_lag": random.uniform(0.1, 5.0),  # 秒
-            "error_rate": random.uniform(0.01, 0.5),  # 百分比
-            "deadlock_frequency": random.randint(0, 10)  # 每小时
+            "cpu_utilization": round(random.uniform(35.0, 85.0), 2),
+            "memory_usage": round(random.uniform(50.0, 90.0), 2),
+            "disk_io_utilization": round(random.uniform(25.0, 75.0), 2),
+            "connection_efficiency": round(random.uniform(75.0, 95.0), 2),
+            "query_performance": round(random.uniform(65.0, 95.0), 2),
+            "buffer_pool_efficiency": round(random.uniform(85.0, 99.0), 2),
+            "replication_health": round(random.uniform(80.0, 100.0), 2) if random.choice([True, False, False]) else None,
+            "security_score": round(random.uniform(70.0, 95.0), 2),
+            "maintenance_score": round(random.uniform(75.0, 90.0), 2),
+            "error_rate": round(random.uniform(0.01, 1.0), 3),
+            "deadlock_frequency": random.randint(0, 50),
+            "slow_query_ratio": round(random.uniform(0.5, 8.0), 2),
+            "table_lock_contention": round(random.uniform(0.1, 5.0), 3),
+            "tmp_table_disk_ratio": round(random.uniform(5.0, 35.0), 2)
         }
         
-        # 确定健康状态
-        avg_performance = (health_factors["cpu_utilization"] + health_factors["memory_usage"] + 
-                          health_factors["query_performance"]) / 3
+        # 确定健康状态（基于多个因素的综合评估）
+        performance_factors = [
+            100 - health_factors["cpu_utilization"],  # CPU使用率越低越好
+            100 - health_factors["memory_usage"],     # 内存使用率越低越好
+            health_factors["query_performance"],      # 查询性能越高越好
+            health_factors["buffer_pool_efficiency"], # 缓冲池效率越高越好
+            health_factors["connection_efficiency"],  # 连接效率越高越好
+            100 - health_factors["disk_io_utilization"], # IO使用率越低越好
+        ]
+        
+        # 如果有复制，加入复制健康度
+        if health_factors["replication_health"] is not None:
+            performance_factors.append(health_factors["replication_health"])
+        
+        avg_performance = sum(performance_factors) / len(performance_factors)
         
         if avg_performance >= 85:
             health_status = "excellent"
@@ -1778,38 +1899,133 @@ class MySQLEnhancedOptimizer:
         elif avg_performance >= 60:
             health_status = "fair"
             health_description = "MySQL运行状况一般，建议关注性能优化"
-        else:
+        elif avg_performance >= 45:
             health_status = "poor"
-            health_description = "MySQL运行状况需要改进，建议立即优化"
+            health_description = "MySQL运行状况较差，需要优化"
+        else:
+            health_status = "critical"
+            health_description = "MySQL运行状况严重，需要立即处理"
         
-        # 生成关键指标
+        # 生成增强的关键指标
         key_metrics = {
-            "cpu_usage": round(health_factors["cpu_utilization"], 1),
-            "memory_usage": round(health_factors["memory_usage"], 1),
-            "active_connections": random.randint(25, 150),
-            "qps": random.randint(500, 5000),
-            "slow_query_ratio": round(random.uniform(0.5, 5.0), 2),
-            "innodb_buffer_pool_hit_ratio": round(random.uniform(88.0, 99.5), 2),
-            "table_locks_waited_ratio": round(random.uniform(0.1, 2.0), 2),
-            "tmp_tables_created_on_disk_ratio": round(random.uniform(5.0, 25.0), 2),
-            "handler_read_rnd_next_ratio": round(random.uniform(10.0, 50.0), 2),
-            "select_full_join_per_second": round(random.uniform(0.1, 5.0), 2)
+            # 基础系统指标
+            "cpu_usage": health_factors["cpu_utilization"],
+            "memory_usage": health_factors["memory_usage"],
+            "disk_io_usage": health_factors["disk_io_utilization"],
+            
+            # 连接和并发指标
+            "active_connections": random.randint(25, 200),
+            "max_connections": random.choice([100, 300, 500, 1000]),
+            "connection_efficiency": health_factors["connection_efficiency"],
+            "threads_running": random.randint(2, 25),
+            "threads_cached": random.randint(10, 100),
+            "aborted_connects": random.randint(0, 500),
+            
+            # 查询性能指标
+            "qps": random.randint(300, 8000),
+            "tps": random.randint(150, 3000),
+            "slow_query_ratio": health_factors["slow_query_ratio"],
+            "avg_query_time": round(random.uniform(0.05, 2.0), 3),
+            "query_performance_score": health_factors["query_performance"],
+            
+            # InnoDB 缓冲池指标
+            "innodb_buffer_pool_hit_ratio": health_factors["buffer_pool_efficiency"],
+            "innodb_buffer_pool_pages_data": random.randint(50000, 300000),
+            "innodb_buffer_pool_pages_dirty": random.randint(1000, 30000),
+            "innodb_buffer_pool_pages_free": random.randint(5000, 100000),
+            "innodb_buffer_pool_reads": random.randint(100000, 10000000),
+            "innodb_buffer_pool_read_requests": random.randint(50000000, 5000000000),
+            
+            # 表和锁指标
+            "table_locks_waited_ratio": health_factors["table_lock_contention"],
+            "table_locks_immediate": random.randint(1000000, 50000000),
+            "table_locks_waited": random.randint(100, 10000),
+            "innodb_deadlocks": health_factors["deadlock_frequency"],
+            
+            # 临时表指标
+            "tmp_tables_created_on_disk_ratio": health_factors["tmp_table_disk_ratio"],
+            "created_tmp_tables": random.randint(10000, 1000000),
+            "created_tmp_disk_tables": random.randint(1000, 100000),
+            
+            # 查询缓存指标（MySQL 5.7及以下）
+            "qcache_hits": random.randint(1000000, 100000000),
+            "qcache_inserts": random.randint(100000, 10000000),
+            "qcache_hit_ratio": round(random.uniform(60.0, 90.0), 2),
+            
+            # MyISAM指标
+            "key_reads": random.randint(100000, 5000000),
+            "key_read_requests": random.randint(10000000, 500000000),
+            "key_buffer_hit_ratio": round(random.uniform(90.0, 99.5), 2),
+            
+            # 排序和扫描指标
+            "sort_merge_passes": random.randint(100, 20000),
+            "sort_rows": random.randint(1000000, 100000000),
+            "handler_read_rnd_next": random.randint(10000000, 1000000000),
+            "select_full_join": random.randint(10, 1000),
+            "select_range_check": random.randint(0, 500),
+            
+            # 复制指标（如果启用）
+            "slave_lag_seconds": random.randint(0, 30) if health_factors["replication_health"] else None,
+            "slave_sql_running": random.choice(['Yes', 'No']) if health_factors["replication_health"] else None,
+            "slave_io_running": random.choice(['Yes', 'No']) if health_factors["replication_health"] else None,
+            "replication_health_score": health_factors["replication_health"],
+            
+            # 错误和异常指标
+            "error_rate": health_factors["error_rate"],
+            "aborted_clients": random.randint(5, 200),
+            "connection_errors_max_connections": random.randint(0, 100),
+            
+            # 网络指标
+            "bytes_sent": random.randint(1000000000, 100000000000),
+            "bytes_received": random.randint(500000000, 50000000000),
+            
+            # 系统信息
+            "uptime_days": round(random.uniform(1, 365), 1),
+            "version": mysql_version,
+            "server_cores": server_spec['cpu_cores'],
+            "server_memory_gb": server_spec['memory_gb'],
+            "storage_type": server_spec['storage_type']
         }
         
-        # 生成趋势数据
+        # 生成增强的趋势数据
         trend_data = []
         base_time = datetime.now() - timedelta(hours=24)
         for i in range(24):  # 24小时数据
             timestamp = base_time + timedelta(hours=i)
+            
+            # 模拟真实的趋势变化
+            hour_factor = (i % 24) / 24.0  # 一天中的时间因子
+            peak_factor = 1.0 + 0.3 * abs(0.5 - hour_factor) * 2  # 工作时间高峰
+            
             trend_data.append({
                 "timestamp": timestamp.isoformat(),
-                "cpu_usage": max(0, min(100, key_metrics["cpu_usage"] + random.uniform(-10, 10))),
-                "memory_usage": max(0, min(100, key_metrics["memory_usage"] + random.uniform(-5, 5))),
-                "qps": max(0, key_metrics["qps"] + random.randint(-500, 500)),
-                "active_connections": max(0, key_metrics["active_connections"] + random.randint(-20, 20)),
-                "slow_queries": random.randint(0, 50),
-                "response_time_avg": round(random.uniform(50, 500), 2)  # ms
+                "cpu_usage": max(0, min(100, key_metrics["cpu_usage"] * peak_factor + random.uniform(-8, 8))),
+                "memory_usage": max(0, min(100, key_metrics["memory_usage"] + random.uniform(-3, 3))),
+                "qps": max(0, int(key_metrics["qps"] * peak_factor + random.randint(-300, 300))),
+                "tps": max(0, int(key_metrics["tps"] * peak_factor + random.randint(-150, 150))),
+                "active_connections": max(0, int(key_metrics["active_connections"] * peak_factor + random.randint(-15, 15))),
+                "slow_queries": random.randint(0, int(30 * peak_factor)),
+                "response_time_avg": round(random.uniform(30, 300) / peak_factor, 2),  # ms
+                "buffer_pool_hit_ratio": max(85, min(100, key_metrics["innodb_buffer_pool_hit_ratio"] + random.uniform(-1.5, 1.5))),
+                "tmp_tables_on_disk": random.randint(0, int(50 * peak_factor)),
+                "table_locks_waited": random.randint(0, int(100 * peak_factor)),
+                "threads_running": max(1, int(key_metrics["threads_running"] * peak_factor + random.randint(-3, 3))),
+                "deadlocks": random.randint(0, 10),
+                "bytes_sent_mb": round(random.uniform(100, 2000) * peak_factor, 2),
+                "bytes_received_mb": round(random.uniform(50, 1000) * peak_factor, 2)
             })
+        
+        # 生成建议总结
+        recommendations_summary = {
+            "total_issues_found": len(selected_bottlenecks),
+            "optimization_opportunities": len(selected_opportunities),
+            "high_priority_items": len([item for item in selected_opportunities if item.get("priority") == "high"]),
+            "critical_bottlenecks": len([item for item in selected_bottlenecks if item.get("severity") == "critical"]),
+            "estimated_performance_gain": f"{random.randint(25, 80)}%",
+            "estimated_cost_reduction": f"{random.randint(15, 40)}%",
+            "implementation_timeline": f"{random.randint(2, 12)}周",
+            "risk_assessment": random.choice(["低风险", "中等风险", "需要谨慎评估"])
+        }
         
         return {
             "database_id": database_id,
@@ -1818,20 +2034,29 @@ class MySQLEnhancedOptimizer:
             "health_status": {
                 "status": health_status,
                 "description": health_description,
-                "overall_score": round(avg_performance, 2)
+                "overall_score": round(avg_performance, 2),
+                "factors_evaluated": len(performance_factors)
             },
             "bottlenecks": selected_bottlenecks,
             "optimization_opportunities": selected_opportunities,
             "key_metrics": key_metrics,
             "health_factors": health_factors,
             "trend_data": trend_data,
-            "recommendations_summary": {
-                "total_issues_found": len(selected_bottlenecks),
-                "optimization_opportunities": len(selected_opportunities),
-                "high_priority_items": len([item for item in selected_opportunities if item.get("priority") == "high"]),
-                "estimated_performance_gain": f"{random.randint(25, 80)}%"
+            "recommendations_summary": recommendations_summary,
+            "system_info": {
+                "mysql_version": mysql_version,
+                "server_specs": server_spec,
+                "uptime_days": key_metrics["uptime_days"],
+                "storage_type": server_spec['storage_type']
+            },
+            "performance_insights": {
+                "top_bottleneck": selected_bottlenecks[0] if selected_bottlenecks else None,
+                "top_opportunity": selected_opportunities[0] if selected_opportunities else None,
+                "critical_alerts": [b for b in selected_bottlenecks if b.get("severity") == "critical"],
+                "quick_wins": [op for op in selected_opportunities if op.get("effort") == "low" and op.get("priority") == "high"]
             },
             "next_review_recommended": (datetime.now() + timedelta(days=7)).isoformat(),
-            "data_source": "enhanced_mock_insights",
-            "mock_version": "2.0"
+            "data_source": "enhanced_mock_insights_v2",
+            "mock_version": "2.1",
+            "generated_at": datetime.now().isoformat()
         }
