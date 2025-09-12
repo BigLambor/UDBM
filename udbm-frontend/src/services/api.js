@@ -282,6 +282,64 @@ export const performanceAPI = {
   // PostgreSQL性能洞察
   getPostgresPerformanceInsights: (databaseId) =>
     api.get(`/performance/postgres/performance-insights/${databaseId}`),
+
+  // =====================================
+  // MySQL 增强调优 API
+  // =====================================
+
+  // MySQL配置分析
+  analyzeMySQLConfig: (databaseId) =>
+    api.get(`/performance-tuning/mysql/config-analysis/${databaseId}`),
+
+  // MySQL存储引擎分析
+  analyzeMySQLStorageEngine: (databaseId) =>
+    api.get(`/performance-tuning/mysql/storage-engine-analysis/${databaseId}`),
+
+  // MySQL硬件分析
+  analyzeMySQLHardware: (databaseId) =>
+    api.get(`/performance-tuning/mysql/hardware-analysis/${databaseId}`),
+
+  // MySQL安全分析
+  analyzeMySQLSecurity: (databaseId) =>
+    api.get(`/performance-tuning/mysql/security-analysis/${databaseId}`),
+
+  // MySQL复制分析
+  analyzeMySQLReplication: (databaseId) =>
+    api.get(`/performance-tuning/mysql/replication-analysis/${databaseId}`),
+
+  // MySQL分区分析
+  analyzeMySQLPartition: (databaseId) =>
+    api.get(`/performance-tuning/mysql/partition-analysis/${databaseId}`),
+
+  // MySQL备份分析
+  analyzeMySQLBackup: (databaseId) =>
+    api.get(`/performance-tuning/mysql/backup-analysis/${databaseId}`),
+
+  // MySQL综合分析
+  comprehensiveMySQLAnalysis: (databaseId, includeAreas = ['config', 'storage', 'security', 'replication']) =>
+    api.post(`/performance-tuning/mysql/comprehensive-analysis/${databaseId}`, null, {
+      params: { include_areas: includeAreas }
+    }),
+
+  // MySQL优化总结
+  getMySQLOptimizationSummary: (databaseId) =>
+    api.get(`/performance-tuning/mysql/optimization-summary/${databaseId}`),
+
+  // MySQL性能洞察
+  getMySQLPerformanceInsights: (databaseId) =>
+    api.get(`/performance-tuning/mysql/performance-insights/${databaseId}`),
+
+  // 生成MySQL调优脚本
+  generateMySQLTuningScript: (databaseId, optimizationAreas = ['config', 'storage', 'security']) =>
+    api.post(`/performance-tuning/mysql/generate-tuning-script/${databaseId}`, null, {
+      params: { optimization_areas: optimizationAreas }
+    }),
+
+  // MySQL快速优化
+  quickMySQLOptimization: (databaseId, focusArea = 'performance') =>
+    api.post(`/performance-tuning/mysql/quick-optimization/${databaseId}`, null, {
+      params: { focus_area: focusArea }
+    }),
 };
 
 // 健康检查API

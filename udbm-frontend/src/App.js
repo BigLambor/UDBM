@@ -27,6 +27,7 @@ import SlowQueryAnalysis from './pages/SlowQueryAnalysis';
 import IndexOptimization from './pages/IndexOptimization';
 import SystemDiagnosis from './pages/SystemDiagnosis';
 import ExecutionPlanAnalysis from './pages/ExecutionPlanAnalysis';
+import MySQLTuningDashboard from './pages/MySQLTuningDashboard';
 
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -45,6 +46,7 @@ const DynamicBreadcrumb = () => {
       '/performance/index-optimization': [{ title: 'UDBM' }, { title: '性能调优' }, { title: '索引优化' }],
       '/performance/execution-plan-analysis': [{ title: 'UDBM' }, { title: '性能调优' }, { title: '执行计划分析' }],
       '/performance/system-diagnosis': [{ title: 'UDBM' }, { title: '性能调优' }, { title: '系统诊断' }],
+      '/performance/mysql-tuning': [{ title: 'UDBM' }, { title: '性能调优' }, { title: 'MySQL专项调优' }],
 
       '/monitoring': [{ title: 'UDBM' }, { title: '监控告警' }],
       '/backup': [{ title: 'UDBM' }, { title: '备份恢复' }],
@@ -111,6 +113,7 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
       '7': '/performance/index-optimization',
       '8': '/performance/execution-plan-analysis',
       '9': '/performance/system-diagnosis',
+      '10': '/performance/mysql-tuning',
 
       '11': '/monitoring',
       '12': '/monitoring',
@@ -224,6 +227,7 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
             <Menu.Item key="7" icon={<DatabaseOutlined />}>索引优化</Menu.Item>
             <Menu.Item key="8" icon={<TableOutlined />}>执行计划分析</Menu.Item>
             <Menu.Item key="9" icon={<SecurityScanOutlined />}>系统诊断</Menu.Item>
+            <Menu.Item key="10" icon={<DatabaseOutlined />}>MySQL专项调优</Menu.Item>
           </SubMenu>
           <SubMenu key="sub3" icon={<PieChartOutlined />} title="监控告警">
             <Menu.Item key="11">监控面板</Menu.Item>
@@ -347,6 +351,7 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
               <Route path="/performance/index-optimization" element={<IndexOptimization />} />
               <Route path="/performance/execution-plan-analysis" element={<ExecutionPlanAnalysis />} />
               <Route path="/performance/system-diagnosis" element={<SystemDiagnosis />} />
+              <Route path="/performance/mysql-tuning" element={<MySQLTuningDashboard />} />
 
             </Routes>
           </div>

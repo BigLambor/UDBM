@@ -844,6 +844,7 @@ const PerformanceDashboard = () => {
         tableHealth={tableHealth}
         vacuumStrategy={vacuumStrategy}
         configAnalysis={configAnalysis}
+        onRefresh={refreshDashboard}
       />
     </div>
   );

@@ -11,6 +11,8 @@ import {
 } from '@ant-design/icons';
 import { Line, Bar } from '@ant-design/charts';
 
+import MySQLEnhancedMetrics from './MySQLEnhancedMetrics';
+
 const { TabPane } = Tabs;
 const { Option } = AntSelect;
 
@@ -463,7 +465,7 @@ const DatabaseSpecificMetrics = ({
           />
         );
       case 'mysql':
-        return <MySQLMetrics database={database} dashboardData={dashboardData} />;
+        return <MySQLEnhancedMetrics database={database} dashboardData={dashboardData} onRefresh={onRefresh} />;
       case 'oracle':
         return <OracleMetrics database={database} dashboardData={dashboardData} />;
       case 'sqlserver':
