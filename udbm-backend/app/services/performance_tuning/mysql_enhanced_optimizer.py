@@ -206,43 +206,193 @@ class MySQLEnhancedOptimizer:
         }
     
     def _get_mock_mysql_config(self) -> Dict[str, Any]:
-        """获取Mock MySQL配置数据"""
+        """获取Mock MySQL配置数据 - 增强版本，模拟真实生产环境"""
+        import random
+        import datetime
+        
+        # 生成随机但合理的指标数据
+        uptime_seconds = random.randint(86400 * 7, 86400 * 365)  # 7天到1年
+        queries_total = random.randint(50000000, 500000000)  # 5千万到5亿查询
+        slow_queries = random.randint(1000, 50000)  # 1千到5万慢查询
+        threads_connected = random.randint(20, 150)  # 20到150个连接
+        threads_running = random.randint(2, 15)  # 2到15个运行线程
+        
         return {
             "memory": {
-                "innodb_buffer_pool_size": "1G",
-                "tmp_table_size": "64M",
-                "max_heap_table_size": "64M",
-                "query_cache_size": "128M",
+                "innodb_buffer_pool_size": "2G",
+                "innodb_buffer_pool_instances": 8,
+                "tmp_table_size": "128M",
+                "max_heap_table_size": "128M",
+                "query_cache_size": "256M",
+                "sort_buffer_size": "2M",
+                "read_buffer_size": "128K",
+                "read_rnd_buffer_size": "256K",
+                "join_buffer_size": "256K",
+                "key_buffer_size": "256M",
+                "myisam_sort_buffer_size": "64M"
             },
             "connections": {
-                "max_connections": 200,
-                "thread_cache_size": 64,
-                "table_open_cache": 4000,
+                "max_connections": 300,
+                "max_user_connections": 250,
+                "thread_cache_size": 128,
+                "table_open_cache": 8000,
+                "table_definition_cache": 2000,
+                "open_files_limit": 65535,
+                "back_log": 300,
+                "max_connect_errors": 100000,
+                "connect_timeout": 10,
+                "wait_timeout": 28800,
+                "interactive_timeout": 28800
             },
             "innodb": {
                 "innodb_flush_log_at_trx_commit": 1,
-                "innodb_log_file_size": "512M",
-                "innodb_io_capacity": 2000,
+                "innodb_log_file_size": "1G",
+                "innodb_log_files_in_group": 2,
+                "innodb_log_buffer_size": "64M",
+                "innodb_io_capacity": 4000,
+                "innodb_io_capacity_max": 8000,
+                "innodb_read_io_threads": 8,
+                "innodb_write_io_threads": 8,
                 "innodb_file_per_table": "ON",
                 "innodb_flush_method": "O_DIRECT",
+                "innodb_lock_wait_timeout": 120,
+                "innodb_thread_concurrency": 16,
+                "innodb_old_blocks_time": 1000,
+                "innodb_stats_on_metadata": "OFF",
+                "innodb_file_format": "Barracuda",
+                "innodb_large_prefix": "ON",
+                "innodb_checksum_algorithm": "crc32",
+                "innodb_doublewrite": "ON",
+                "innodb_flush_neighbors": 0,  # SSD优化
+                "innodb_adaptive_hash_index": "ON",
+                "innodb_change_buffering": "all"
             },
             "replication": {
                 "sync_binlog": 1,
                 "binlog_format": "ROW",
+                "binlog_row_image": "FULL",
                 "expire_logs_days": 7,
+                "max_binlog_size": "1G",
+                "binlog_cache_size": "1M",
+                "binlog_stmt_cache_size": "32K",
+                "log_slave_updates": "ON",
+                "slave_parallel_workers": 4,
+                "slave_parallel_type": "LOGICAL_CLOCK",
+                "master_info_repository": "TABLE",
+                "relay_log_info_repository": "TABLE",
+                "gtid_mode": "ON",
+                "enforce_gtid_consistency": "ON"
             },
             "query_cache": {
                 "query_cache_type": "ON",
-                "query_cache_size": "128M",
+                "query_cache_size": "256M",
+                "query_cache_limit": "2M",
+                "query_cache_min_res_unit": "4K",
+                "query_cache_wlock_invalidate": "OFF"
             },
-            "version": "MySQL 8.0.x (mock)",
+            "performance": {
+                "slow_query_log": "ON",
+                "long_query_time": 2.0,
+                "log_queries_not_using_indexes": "ON",
+                "log_throttle_queries_not_using_indexes": 10,
+                "min_examined_row_limit": 100,
+                "log_slow_admin_statements": "ON",
+                "log_slow_slave_statements": "ON"
+            },
+            "security": {
+                "validate_password_policy": "MEDIUM",
+                "validate_password_length": 8,
+                "validate_password_mixed_case_count": 1,
+                "validate_password_number_count": 1,
+                "validate_password_special_char_count": 1,
+                "ssl_cipher": "ECDHE-RSA-AES128-GCM-SHA256",
+                "require_secure_transport": "OFF",
+                "local_infile": "OFF",
+                "secure_file_priv": "/var/lib/mysql-files/",
+                "skip_name_resolve": "ON"
+            },
+            "version": f"MySQL 8.0.{random.randint(25, 35)} (Enhanced Mock Data)",
+            "server_id": random.randint(1, 1000),
+            "character_set_server": "utf8mb4",
+            "collation_server": "utf8mb4_unicode_ci",
+            "default_storage_engine": "InnoDB",
+            "sql_mode": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION",
             "status": {
-                "Uptime": "86400",
-                "Threads_connected": "45",
-                "Threads_running": "8",
-                "Queries": "1500000",
-                "Slow_queries": "125"
-            }
+                "Uptime": str(uptime_seconds),
+                "Threads_connected": str(threads_connected),
+                "Threads_running": str(threads_running),
+                "Threads_cached": str(random.randint(50, 128)),
+                "Threads_created": str(random.randint(500, 5000)),
+                "Queries": str(queries_total),
+                "Slow_queries": str(slow_queries),
+                "Questions": str(queries_total - random.randint(1000, 10000)),
+                "Com_select": str(int(queries_total * 0.7)),
+                "Com_insert": str(int(queries_total * 0.15)),
+                "Com_update": str(int(queries_total * 0.10)),
+                "Com_delete": str(int(queries_total * 0.05)),
+                "Connections": str(random.randint(10000, 100000)),
+                "Max_used_connections": str(random.randint(80, 200)),
+                "Aborted_connects": str(random.randint(10, 500)),
+                "Aborted_clients": str(random.randint(5, 100)),
+                "Table_locks_immediate": str(random.randint(1000000, 10000000)),
+                "Table_locks_waited": str(random.randint(100, 5000)),
+                "Key_reads": str(random.randint(100000, 1000000)),
+                "Key_read_requests": str(random.randint(10000000, 100000000)),
+                "Key_writes": str(random.randint(50000, 500000)),
+                "Key_write_requests": str(random.randint(5000000, 50000000)),
+                "Qcache_hits": str(random.randint(1000000, 50000000)),
+                "Qcache_inserts": str(random.randint(100000, 5000000)),
+                "Qcache_not_cached": str(random.randint(50000, 1000000)),
+                "Qcache_lowmem_prunes": str(random.randint(1000, 50000)),
+                "Sort_merge_passes": str(random.randint(100, 10000)),
+                "Sort_range": str(random.randint(10000, 500000)),
+                "Sort_rows": str(random.randint(1000000, 50000000)),
+                "Sort_scan": str(random.randint(5000, 200000)),
+                "Created_tmp_tables": str(random.randint(10000, 500000)),
+                "Created_tmp_disk_tables": str(random.randint(1000, 50000)),
+                "Created_tmp_files": str(random.randint(100, 5000)),
+                "Handler_read_first": str(random.randint(10000, 500000)),
+                "Handler_read_key": str(random.randint(10000000, 100000000)),
+                "Handler_read_next": str(random.randint(50000000, 500000000)),
+                "Handler_read_prev": str(random.randint(1000000, 50000000)),
+                "Handler_read_rnd": str(random.randint(500000, 10000000)),
+                "Handler_read_rnd_next": str(random.randint(100000000, 1000000000)),
+                "Select_full_join": str(random.randint(100, 5000)),
+                "Select_full_range_join": str(random.randint(50, 2000)),
+                "Select_range": str(random.randint(100000, 5000000)),
+                "Select_range_check": str(random.randint(10, 1000)),
+                "Select_scan": str(random.randint(50000, 1000000))
+            },
+            "innodb_status": {
+                "Innodb_buffer_pool_reads": str(random.randint(1000000, 50000000)),
+                "Innodb_buffer_pool_read_requests": str(random.randint(100000000, 1000000000)),
+                "Innodb_buffer_pool_write_requests": str(random.randint(50000000, 500000000)),
+                "Innodb_buffer_pool_pages_data": str(random.randint(50000, 200000)),
+                "Innodb_buffer_pool_pages_dirty": str(random.randint(1000, 20000)),
+                "Innodb_buffer_pool_pages_flushed": str(random.randint(1000000, 50000000)),
+                "Innodb_buffer_pool_pages_free": str(random.randint(10000, 100000)),
+                "Innodb_buffer_pool_pages_total": str(random.randint(100000, 500000)),
+                "Innodb_data_fsyncs": str(random.randint(100000, 5000000)),
+                "Innodb_data_reads": str(random.randint(1000000, 100000000)),
+                "Innodb_data_writes": str(random.randint(500000, 50000000)),
+                "Innodb_data_read": str(random.randint(10000000000, 1000000000000)),  # 字节
+                "Innodb_data_written": str(random.randint(5000000000, 500000000000)),  # 字节
+                "Innodb_log_waits": str(random.randint(0, 1000)),
+                "Innodb_log_writes": str(random.randint(1000000, 50000000)),
+                "Innodb_log_write_requests": str(random.randint(10000000, 500000000)),
+                "Innodb_os_log_written": str(random.randint(1000000000, 100000000000)),  # 字节
+                "Innodb_rows_deleted": str(random.randint(100000, 10000000)),
+                "Innodb_rows_inserted": str(random.randint(1000000, 100000000)),
+                "Innodb_rows_read": str(random.randint(100000000, 10000000000)),
+                "Innodb_rows_updated": str(random.randint(500000, 50000000)),
+                "Innodb_deadlocks": str(random.randint(10, 1000)),
+                "Innodb_mutex_spin_waits": str(random.randint(100000, 10000000)),
+                "Innodb_mutex_spin_rounds": str(random.randint(1000000, 100000000)),
+                "Innodb_mutex_os_waits": str(random.randint(10000, 1000000))
+            },
+            "generated_at": datetime.datetime.now().isoformat(),
+            "data_source": "enhanced_mock_data",
+            "mock_version": "2.0"
         }
 
     def analyze_storage_engine_optimization(self, database_id: int) -> Dict[str, Any]:
@@ -801,86 +951,257 @@ class MySQLEnhancedOptimizer:
                 optimization_areas = ["config", "storage", "security", "replication"]
             
             script_lines = [
-                "# MySQL 综合性能调优脚本",
-                f"# 生成时间: {datetime.now().isoformat()}",
-                f"# 数据库ID: {database_id}",
-                "# 注意：执行前请备份配置文件和数据",
+                "-- =====================================",
+                "-- MySQL 综合性能调优脚本 (Enhanced Version)",
+                "-- =====================================",
+                f"-- 生成时间: {datetime.now().isoformat()}",
+                f"-- 数据库ID: {database_id}",
+                f"-- 优化区域: {', '.join(optimization_areas)}",
+                "-- 脚本版本: 2.0",
+                "-- 注意：执行前请备份配置文件和数据库",
+                "-- 建议在测试环境中先验证效果",
                 "",
-                "# =====================================",
-                "# 1. 基础配置优化",
-                "# ====================================="
+                "-- 检查当前MySQL版本和状态",
+                "SELECT VERSION() as mysql_version;",
+                "SELECT @@global.innodb_version as innodb_version;",
+                "SHOW GLOBAL STATUS LIKE 'Uptime';",
+                "SHOW GLOBAL STATUS LIKE 'Threads_connected';",
+                "",
+                "-- =====================================",
+                "-- 1. 系统信息收集（执行前状态）",
+                "-- =====================================",
+                "",
+                "-- 收集关键性能指标（执行前基准）",
+                "SELECT 'BEFORE_OPTIMIZATION' as phase,",
+                "       @@global.innodb_buffer_pool_size as buffer_pool_size,",
+                "       @@global.max_connections as max_connections,",
+                "       @@global.innodb_io_capacity as io_capacity,",
+                "       @@global.thread_cache_size as thread_cache_size;",
+                "",
+                "-- 记录当前慢查询统计",
+                "SHOW GLOBAL STATUS LIKE 'Slow_queries';",
+                "SHOW GLOBAL STATUS LIKE 'Questions';",
+                "",
+                "-- =====================================",
+                "-- 2. 内存配置优化",
+                "-- ====================================="
             ]
             
             if "config" in optimization_areas:
                 config_analysis = self.analyze_configuration(database_id)
                 script_lines.extend([
                     "",
-                    "# InnoDB 配置优化",
-                    "SET GLOBAL innodb_buffer_pool_size = 4294967296;  # 4G",
-                    "SET GLOBAL innodb_log_file_size = 536870912;      # 512M",
-                    "SET GLOBAL innodb_io_capacity = 4000;",
+                    "-- InnoDB 缓冲池优化（建议设置为系统内存的70-80%）",
+                    "SET GLOBAL innodb_buffer_pool_size = 6442450944;  -- 6G",
+                    "SET GLOBAL innodb_buffer_pool_instances = 8;      -- 多实例提升并发",
+                    "",
+                    "-- InnoDB 日志优化",
+                    "-- 注意：innodb_log_file_size 需要重启生效，请在my.cnf中配置",
+                    "-- innodb_log_file_size = 2G",
+                    "SET GLOBAL innodb_log_buffer_size = 67108864;     -- 64M",
+                    "SET GLOBAL innodb_flush_log_at_trx_commit = 2;    -- 性能优先（可能丢失1秒数据）",
+                    "",
+                    "-- InnoDB IO 优化（SSD存储推荐配置）",
+                    "SET GLOBAL innodb_io_capacity = 6000;            -- 基于SSD IOPS",
+                    "SET GLOBAL innodb_io_capacity_max = 12000;       -- 最大IO容量",
                     "SET GLOBAL innodb_read_io_threads = 8;",
                     "SET GLOBAL innodb_write_io_threads = 8;",
+                    "SET GLOBAL innodb_flush_neighbors = 0;           -- SSD不需要邻页刷新",
                     "",
-                    "# 连接和缓存优化",
-                    "SET GLOBAL max_connections = 500;",
-                    "SET GLOBAL thread_cache_size = 128;",
-                    "SET GLOBAL table_open_cache = 8192;",
-                    "SET GLOBAL tmp_table_size = 134217728;           # 128M",
-                    "SET GLOBAL max_heap_table_size = 134217728;      # 128M"
+                    "-- 连接管理优化",
+                    "SET GLOBAL max_connections = 1000;               -- 支持更多并发连接",
+                    "SET GLOBAL max_user_connections = 800;           -- 单用户连接限制",
+                    "SET GLOBAL thread_cache_size = 200;              -- 线程缓存",
+                    "SET GLOBAL back_log = 500;                       -- 连接队列长度",
+                    "",
+                    "-- 表和缓存优化",
+                    "SET GLOBAL table_open_cache = 16000;             -- 表缓存",
+                    "SET GLOBAL table_definition_cache = 4000;        -- 表定义缓存",
+                    "SET GLOBAL open_files_limit = 65535;             -- 文件描述符限制",
+                    "",
+                    "-- 临时表和排序优化",
+                    "SET GLOBAL tmp_table_size = 268435456;           -- 256M",
+                    "SET GLOBAL max_heap_table_size = 268435456;      -- 256M",
+                    "SET GLOBAL sort_buffer_size = 4194304;           -- 4M（会话级别）",
+                    "SET GLOBAL read_buffer_size = 262144;            -- 256K",
+                    "SET GLOBAL read_rnd_buffer_size = 524288;        -- 512K",
+                    "SET GLOBAL join_buffer_size = 524288;            -- 512K",
+                    "",
+                    "-- 查询缓存优化（MySQL 5.7及以下版本）",
+                    "-- MySQL 8.0已移除查询缓存，以下配置仅适用于旧版本",
+                    "-- SET GLOBAL query_cache_type = OFF;            -- 建议禁用",
+                    "-- SET GLOBAL query_cache_size = 0;",
+                    "",
+                    "-- MyISAM 引擎优化（如果使用）",
+                    "SET GLOBAL key_buffer_size = 536870912;          -- 512M MyISAM索引缓存",
+                    "SET GLOBAL myisam_sort_buffer_size = 134217728;  -- 128M",
+                    "",
+                    "-- 验证配置更改",
+                    "SELECT 'MEMORY_CONFIG_APPLIED' as status;",
+                    "SHOW GLOBAL VARIABLES LIKE 'innodb_buffer_pool_size';",
+                    "SHOW GLOBAL VARIABLES LIKE 'max_connections';",
+                    "SHOW GLOBAL VARIABLES LIKE 'innodb_io_capacity';"
                 ])
             
             if "storage" in optimization_areas:
                 script_lines.extend([
                     "",
-                    "# =====================================",
-                    "# 2. 存储引擎优化",
-                    "# =====================================",
+                    "-- =====================================",
+                    "-- 3. 存储引擎优化",
+                    "-- =====================================",
                     "",
-                    "# InnoDB 存储引擎优化",
-                    "SET GLOBAL innodb_file_per_table = ON;",
-                    "SET GLOBAL innodb_flush_method = 'O_DIRECT';",
-                    "SET GLOBAL innodb_flush_log_at_trx_commit = 2;    # 性能优先",
-                    "SET GLOBAL innodb_doublewrite = ON;",
-                    "SET GLOBAL innodb_adaptive_hash_index = ON;"
+                    "-- InnoDB 存储引擎基础配置",
+                    "SET GLOBAL innodb_file_per_table = ON;           -- 独立表空间",
+                    "SET GLOBAL innodb_flush_method = 'O_DIRECT';     -- 直接IO，避免双重缓冲",
+                    "SET GLOBAL innodb_doublewrite = ON;              -- 双写缓冲，保证数据完整性",
+                    "",
+                    "-- InnoDB 自适应特性配置",
+                    "SET GLOBAL innodb_adaptive_hash_index = OFF;     -- 高并发下建议禁用",
+                    "SET GLOBAL innodb_adaptive_flushing = ON;        -- 自适应刷新",
+                    "SET GLOBAL innodb_change_buffering = 'none';     -- SSD存储建议禁用",
+                    "",
+                    "-- InnoDB 锁和并发控制",
+                    "SET GLOBAL innodb_lock_wait_timeout = 60;        -- 锁等待超时",
+                    "SET GLOBAL innodb_thread_concurrency = 0;        -- 0表示不限制",
+                    "SET GLOBAL innodb_old_blocks_time = 1000;        -- 热点数据保护",
+                    "",
+                    "-- InnoDB 统计信息优化",
+                    "SET GLOBAL innodb_stats_on_metadata = OFF;       -- 禁用元数据统计",
+                    "SET GLOBAL innodb_stats_persistent = ON;         -- 持久化统计信息",
+                    "SET GLOBAL innodb_stats_auto_recalc = ON;        -- 自动重新计算统计",
+                    "",
+                    "-- 数据完整性和校验",
+                    "SET GLOBAL innodb_checksum_algorithm = 'crc32';  -- 快速校验算法",
+                    "SET GLOBAL innodb_page_cleaners = 4;             -- 页面清理线程数",
+                    "",
+                    "-- 验证存储引擎配置",
+                    "SELECT 'STORAGE_ENGINE_CONFIG_APPLIED' as status;",
+                    "SHOW GLOBAL VARIABLES LIKE 'innodb_file_per_table';",
+                    "SHOW GLOBAL VARIABLES LIKE 'innodb_flush_method';",
+                    "SHOW GLOBAL VARIABLES LIKE 'innodb_adaptive_hash_index';"
                 ])
             
             if "security" in optimization_areas:
                 script_lines.extend([
                     "",
-                    "# =====================================",
-                    "# 3. 安全配置优化",
-                    "# =====================================",
+                    "-- =====================================",
+                    "-- 4. 安全配置优化",
+                    "-- =====================================",
                     "",
-                    "# 用户权限清理",
-                    "DELETE FROM mysql.user WHERE User='';",
-                    "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');",
+                    "-- 警告：以下安全操作会影响现有用户和权限",
+                    "-- 请在执行前确认当前用户配置",
+                    "SELECT 'SECURITY_OPTIMIZATION_START' as status;",
                     "",
-                    "# 启用SSL（需要证书文件）",
-                    "-- SET GLOBAL require_secure_transport = ON;",
+                    "-- 查看当前用户状态",
+                    "SELECT User, Host, authentication_string IS NOT NULL as has_password",
+                    "FROM mysql.user ORDER BY User, Host;",
                     "",
-                    "# 密码策略（MySQL 5.7+）",
-                    "-- INSTALL PLUGIN validate_password SONAME 'validate_password.so';",
-                    "-- SET GLOBAL validate_password.policy = MEDIUM;"
+                    "-- 用户权限清理（谨慎执行）",
+                    "-- 删除匿名用户",
+                    "-- DELETE FROM mysql.user WHERE User='';",
+                    "",
+                    "-- 限制root用户远程访问（仅保留本地访问）",
+                    "-- DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');",
+                    "",
+                    "-- 删除test数据库（如果存在且不需要）",
+                    "-- DROP DATABASE IF EXISTS test;",
+                    "-- DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';",
+                    "",
+                    "-- 网络安全配置",
+                    "SET GLOBAL local_infile = OFF;                   -- 禁用LOCAL INFILE",
+                    "-- SET GLOBAL skip_name_resolve = ON;            -- 禁用DNS解析（需要重启）",
+                    "",
+                    "-- SSL/TLS 配置（需要证书文件）",
+                    "-- 请确保已配置SSL证书文件",
+                    "-- SET GLOBAL require_secure_transport = ON;     -- 强制SSL连接",
+                    "-- SET GLOBAL tls_version = 'TLSv1.2,TLSv1.3';  -- 指定TLS版本",
+                    "",
+                    "-- 密码策略配置（MySQL 8.0+）",
+                    "-- 检查密码验证组件是否已安装",
+                    "-- SELECT PLUGIN_NAME, PLUGIN_STATUS FROM INFORMATION_SCHEMA.PLUGINS",
+                    "-- WHERE PLUGIN_NAME LIKE 'validate_password%';",
+                    "",
+                    "-- 安装和配置密码验证组件",
+                    "-- INSTALL COMPONENT 'file://component_validate_password';",
+                    "-- SET GLOBAL validate_password.policy = 'MEDIUM';",
+                    "-- SET GLOBAL validate_password.length = 8;",
+                    "-- SET GLOBAL validate_password.mixed_case_count = 1;",
+                    "-- SET GLOBAL validate_password.number_count = 1;",
+                    "-- SET GLOBAL validate_password.special_char_count = 1;",
+                    "",
+                    "-- 日志和审计配置",
+                    "SET GLOBAL general_log = OFF;                    -- 通常建议关闭以提升性能",
+                    "SET GLOBAL slow_query_log = ON;                 -- 启用慢查询日志",
+                    "SET GLOBAL log_queries_not_using_indexes = ON;  -- 记录未使用索引的查询",
+                    "SET GLOBAL long_query_time = 1.0;               -- 慢查询阈值1秒",
+                    "",
+                    "-- 连接安全限制",
+                    "SET GLOBAL max_connect_errors = 100000;         -- 连接错误限制",
+                    "SET GLOBAL max_connections_per_hour = 0;        -- 每小时连接数限制（0=无限制）",
+                    "",
+                    "-- 刷新权限表使更改生效",
+                    "FLUSH PRIVILEGES;",
+                    "",
+                    "-- 验证安全配置",
+                    "SELECT 'SECURITY_CONFIG_APPLIED' as status;",
+                    "SHOW GLOBAL VARIABLES LIKE 'local_infile';",
+                    "SHOW GLOBAL VARIABLES LIKE 'slow_query_log';",
+                    "SHOW GLOBAL VARIABLES LIKE 'long_query_time';"
                 ])
             
             if "replication" in optimization_areas:
                 script_lines.extend([
                     "",
-                    "# =====================================",
-                    "# 4. 主从复制优化",
-                    "# =====================================",
+                    "-- =====================================",
+                    "-- 5. 主从复制优化",
+                    "-- =====================================",
                     "",
-                    "# 主库配置",
-                    "SET GLOBAL binlog_format = 'ROW';",
-                    "SET GLOBAL sync_binlog = 0;                      # 性能优先",
-                    "SET GLOBAL binlog_cache_size = 1048576;          # 1M",
-                    "SET GLOBAL expire_logs_days = 7;",
+                    "-- 检查当前复制状态",
+                    "SELECT 'REPLICATION_OPTIMIZATION_START' as status;",
+                    "-- SHOW MASTER STATUS;  -- 在主库执行",
+                    "-- SHOW SLAVE STATUS\\G  -- 在从库执行",
                     "",
-                    "# 从库配置（在从库执行）",
-                    "-- SET GLOBAL slave_parallel_workers = 4;",
-                    "-- SET GLOBAL slave_parallel_type = 'LOGICAL_CLOCK';",
-                    "-- SET GLOBAL relay_log_recovery = ON;"
+                    "-- 主库二进制日志配置",
+                    "SET GLOBAL binlog_format = 'ROW';               -- 行级复制，数据一致性最好",
+                    "SET GLOBAL binlog_row_image = 'FULL';           -- 完整行镜像",
+                    "SET GLOBAL sync_binlog = 100;                   -- 性能优化（可调整为1以获得最高安全性）",
+                    "SET GLOBAL binlog_cache_size = 2097152;         -- 2M binlog缓存",
+                    "SET GLOBAL binlog_stmt_cache_size = 65536;      -- 64K语句缓存",
+                    "SET GLOBAL max_binlog_size = 1073741824;        -- 1G单个binlog文件大小",
+                    "SET GLOBAL expire_logs_days = 7;                -- binlog保留7天",
+                    "",
+                    "-- GTID配置（MySQL 5.6+推荐）",
+                    "-- 注意：启用GTID需要重启MySQL",
+                    "-- SET GLOBAL gtid_mode = ON;",
+                    "-- SET GLOBAL enforce_gtid_consistency = ON;",
+                    "",
+                    "-- 主库性能优化",
+                    "SET GLOBAL slave_pending_jobs_size_max = 134217728;  -- 128M",
+                    "SET GLOBAL rpl_semi_sync_master_timeout = 1000;     -- 半同步超时1秒",
+                    "",
+                    "-- 从库并行复制配置（在从库执行）",
+                    "-- 以下配置仅在从库执行",
+                    "/*",
+                    "-- 并行复制配置",
+                    "SET GLOBAL slave_parallel_workers = 8;          -- 并行工作线程数",
+                    "SET GLOBAL slave_parallel_type = 'LOGICAL_CLOCK'; -- 逻辑时钟并行",
+                    "SET GLOBAL slave_preserve_commit_order = ON;    -- 保持提交顺序",
+                    "",
+                    "-- 从库恢复和安全配置",
+                    "SET GLOBAL relay_log_recovery = ON;             -- 启用relay log恢复",
+                    "SET GLOBAL master_info_repository = 'TABLE';    -- 使用表存储主库信息",
+                    "SET GLOBAL relay_log_info_repository = 'TABLE'; -- 使用表存储relay log信息",
+                    "",
+                    "-- 从库网络和超时配置",
+                    "SET GLOBAL slave_net_timeout = 60;              -- 网络超时60秒",
+                    "SET GLOBAL slave_sql_verify_checksum = ON;      -- 启用校验和验证",
+                    "*/",
+                    "",
+                    "-- 验证复制配置",
+                    "SELECT 'REPLICATION_CONFIG_APPLIED' as status;",
+                    "SHOW GLOBAL VARIABLES LIKE 'binlog_format';",
+                    "SHOW GLOBAL VARIABLES LIKE 'sync_binlog';",
+                    "SHOW GLOBAL VARIABLES LIKE 'expire_logs_days';"
                 ])
             
             script_lines.extend([
@@ -987,6 +1308,10 @@ class MySQLEnhancedOptimizer:
                 }
             }
             
+            # 添加增强的性能洞察数据
+            enhanced_insights = self._generate_enhanced_mysql_performance_insights(database_id)
+            optimization_summary["enhanced_insights"] = enhanced_insights
+            
             return optimization_summary
             
         except Exception as e:
@@ -1072,20 +1397,38 @@ class MySQLEnhancedOptimizer:
             return []
 
     def _generate_config_recommendations(self, current: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """生成配置优化建议"""
+        """生成配置优化建议 - 增强版本，提供更全面的优化建议"""
         recs = []
+        import random
         
         # 内存配置建议
         memory_config = current.get("memory", {})
-        if memory_config.get("innodb_buffer_pool_size") in ("1G", "2G"):
+        buffer_pool_size = memory_config.get("innodb_buffer_pool_size", "1G")
+        if buffer_pool_size in ("1G", "2G"):
             recs.append({
                 "category": "memory",
                 "parameter": "innodb_buffer_pool_size",
-                "current_value": memory_config.get("innodb_buffer_pool_size"),
-                "recommended_value": "4G",
+                "current_value": buffer_pool_size,
+                "recommended_value": "6G",
                 "impact": "high",
-                "description": "提高缓冲池减少物理IO",
-                "estimated_improvement": "30-50% 查询性能提升"
+                "description": "增加InnoDB缓冲池大小，建议设置为系统内存的70-80%",
+                "estimated_improvement": "30-50% 查询性能提升",
+                "reason": "更大的缓冲池可以缓存更多数据页，减少磁盘IO",
+                "sql_example": "SET GLOBAL innodb_buffer_pool_size = 6442450944; -- 6G"
+            })
+
+        # 查询缓存优化（MySQL 8.0已移除，但为了演示保留）
+        if memory_config.get("query_cache_size", "0") != "0":
+            recs.append({
+                "category": "memory",
+                "parameter": "query_cache_size",
+                "current_value": memory_config.get("query_cache_size"),
+                "recommended_value": "0",
+                "impact": "medium",
+                "description": "MySQL 8.0+建议禁用查询缓存，使用应用层缓存替代",
+                "estimated_improvement": "减少锁竞争，提升并发性能",
+                "reason": "查询缓存在高并发下会成为性能瓶颈",
+                "sql_example": "SET GLOBAL query_cache_type = OFF;"
             })
 
         # InnoDB配置建议
@@ -1096,23 +1439,192 @@ class MySQLEnhancedOptimizer:
                 "parameter": "innodb_flush_log_at_trx_commit",
                 "current_value": 1,
                 "recommended_value": 2,
-                "impact": "medium",
-                "description": "在允许的持久性前提下降低fsync频率",
-                "estimated_improvement": "20-40% 写入性能提升"
+                "impact": "high",
+                "description": "在可接受的数据安全性下，设置为2可显著提升写入性能",
+                "estimated_improvement": "40-60% 写入性能提升",
+                "reason": "减少fsync调用频率，但保持事务日志完整性",
+                "trade_off": "可能丢失最后1秒的事务数据",
+                "sql_example": "SET GLOBAL innodb_flush_log_at_trx_commit = 2;"
             })
-        
+
+        # IO容量优化
+        if innodb_config.get("innodb_io_capacity", 0) < 4000:
+            recs.append({
+                "category": "innodb",
+                "parameter": "innodb_io_capacity",
+                "current_value": innodb_config.get("innodb_io_capacity", 200),
+                "recommended_value": 6000,
+                "impact": "medium",
+                "description": "基于SSD存储，提高IO容量限制以充分利用硬件性能",
+                "estimated_improvement": "20-35% 写入性能提升",
+                "reason": "SSD可以处理更高的IOPS",
+                "sql_example": "SET GLOBAL innodb_io_capacity = 6000;"
+            })
+
+        # 日志文件大小优化
+        log_file_size = innodb_config.get("innodb_log_file_size", "48M")
+        if log_file_size in ("48M", "512M", "1G"):
+            recs.append({
+                "category": "innodb",
+                "parameter": "innodb_log_file_size",
+                "current_value": log_file_size,
+                "recommended_value": "2G",
+                "impact": "medium",
+                "description": "增加重做日志文件大小，减少日志切换频率",
+                "estimated_improvement": "15-25% 写入性能提升",
+                "reason": "更大的日志文件可以减少checkpoint频率",
+                "note": "需要重启MySQL服务生效",
+                "config_example": "innodb_log_file_size = 2G"
+            })
+
         # 连接配置建议
         connections_config = current.get("connections", {})
-        if connections_config.get("max_connections", 0) < 300:
+        max_conn = connections_config.get("max_connections", 151)
+        if max_conn < 500:
             recs.append({
                 "category": "connections",
                 "parameter": "max_connections",
-                "current_value": connections_config.get("max_connections"),
-                "recommended_value": 500,
+                "current_value": max_conn,
+                "recommended_value": 1000,
                 "impact": "medium",
-                "description": "增加最大连接数以支持更高并发",
-                "estimated_improvement": "提升并发处理能力"
+                "description": "增加最大连接数以支持更高并发负载",
+                "estimated_improvement": "提升并发处理能力",
+                "reason": "现代应用通常需要更多并发连接",
+                "sql_example": "SET GLOBAL max_connections = 1000;",
+                "note": "需要确保系统有足够内存支持更多连接"
             })
+
+        # 线程缓存优化
+        thread_cache = connections_config.get("thread_cache_size", 8)
+        if thread_cache < 100:
+            recs.append({
+                "category": "connections",
+                "parameter": "thread_cache_size",
+                "current_value": thread_cache,
+                "recommended_value": 200,
+                "impact": "low",
+                "description": "增加线程缓存大小，减少线程创建开销",
+                "estimated_improvement": "5-15% 连接建立性能提升",
+                "reason": "避免频繁创建和销毁线程",
+                "sql_example": "SET GLOBAL thread_cache_size = 200;"
+            })
+
+        # 表缓存优化
+        table_cache = connections_config.get("table_open_cache", 2000)
+        if table_cache < 8000:
+            recs.append({
+                "category": "connections",
+                "parameter": "table_open_cache",
+                "current_value": table_cache,
+                "recommended_value": 16000,
+                "impact": "medium",
+                "description": "增加表缓存大小，减少表打开关闭开销",
+                "estimated_improvement": "10-20% 多表查询性能提升",
+                "reason": "缓存更多表文件描述符，减少文件系统调用",
+                "sql_example": "SET GLOBAL table_open_cache = 16000;"
+            })
+
+        # 临时表优化
+        tmp_table_size = memory_config.get("tmp_table_size", "16M")
+        if tmp_table_size in ("16M", "32M", "64M"):
+            recs.append({
+                "category": "memory",
+                "parameter": "tmp_table_size",
+                "current_value": tmp_table_size,
+                "recommended_value": "256M",
+                "impact": "medium",
+                "description": "增加临时表大小，减少磁盘临时表创建",
+                "estimated_improvement": "20-40% 复杂查询性能提升",
+                "reason": "更多临时表可以在内存中处理",
+                "sql_example": "SET GLOBAL tmp_table_size = 268435456; -- 256M"
+            })
+
+        # 排序缓冲区优化
+        sort_buffer = memory_config.get("sort_buffer_size", "256K")
+        if sort_buffer in ("256K", "512K", "1M"):
+            recs.append({
+                "category": "memory",
+                "parameter": "sort_buffer_size",
+                "current_value": sort_buffer,
+                "recommended_value": "4M",
+                "impact": "medium",
+                "description": "增加排序缓冲区大小，提升ORDER BY性能",
+                "estimated_improvement": "15-30% 排序查询性能提升",
+                "reason": "更大的排序缓冲区可以减少磁盘排序",
+                "sql_example": "SET GLOBAL sort_buffer_size = 4194304; -- 4M"
+            })
+
+        # 慢查询日志优化
+        performance_config = current.get("performance", {})
+        long_query_time = performance_config.get("long_query_time", 10.0)
+        if long_query_time > 2.0:
+            recs.append({
+                "category": "performance",
+                "parameter": "long_query_time",
+                "current_value": long_query_time,
+                "recommended_value": 1.0,
+                "impact": "low",
+                "description": "降低慢查询阈值，更好地监控查询性能",
+                "estimated_improvement": "提升问题发现能力",
+                "reason": "1秒以上的查询通常需要优化",
+                "sql_example": "SET GLOBAL long_query_time = 1.0;"
+            })
+
+        # 二进制日志优化
+        replication_config = current.get("replication", {})
+        if replication_config.get("sync_binlog", 1) == 1:
+            recs.append({
+                "category": "replication",
+                "parameter": "sync_binlog",
+                "current_value": 1,
+                "recommended_value": 100,
+                "impact": "high",
+                "description": "在可接受的数据安全性下，减少binlog同步频率",
+                "estimated_improvement": "30-50% 写入性能提升",
+                "reason": "减少磁盘同步调用，提升写入吞吐量",
+                "trade_off": "可能丢失最后几个事务的binlog",
+                "sql_example": "SET GLOBAL sync_binlog = 100;"
+            })
+
+        # 随机添加一些高级优化建议
+        advanced_recommendations = [
+            {
+                "category": "innodb",
+                "parameter": "innodb_adaptive_hash_index",
+                "current_value": "ON",
+                "recommended_value": "OFF",
+                "impact": "low",
+                "description": "在高并发OLTP场景下，禁用自适应哈希索引可能提升性能",
+                "estimated_improvement": "5-10% 并发性能提升",
+                "reason": "减少AHI锁竞争",
+                "sql_example": "SET GLOBAL innodb_adaptive_hash_index = OFF;"
+            },
+            {
+                "category": "innodb",
+                "parameter": "innodb_flush_neighbors",
+                "current_value": 1,
+                "recommended_value": 0,
+                "impact": "medium",
+                "description": "SSD存储建议禁用邻页刷新",
+                "estimated_improvement": "10-20% 随机写入性能提升",
+                "reason": "SSD随机访问性能好，不需要邻页优化",
+                "sql_example": "SET GLOBAL innodb_flush_neighbors = 0;"
+            },
+            {
+                "category": "innodb",
+                "parameter": "innodb_change_buffering",
+                "current_value": "all",
+                "recommended_value": "none",
+                "impact": "medium",
+                "description": "SSD存储可以考虑禁用change buffering",
+                "estimated_improvement": "减少内存使用，提升实时性",
+                "reason": "SSD随机写入性能好，不需要缓冲",
+                "sql_example": "SET GLOBAL innodb_change_buffering = 'none';"
+            }
+        ]
+
+        # 随机选择1-2个高级建议
+        recs.extend(random.sample(advanced_recommendations, random.randint(1, 2)))
 
         return recs
 
@@ -1135,3 +1647,191 @@ class MySQLEnhancedOptimizer:
             score += 10
             
         return min(100.0, score)
+
+    def _generate_enhanced_mysql_performance_insights(self, database_id: int) -> Dict[str, Any]:
+        """生成增强的MySQL性能洞察数据 - 包含丰富的Mock数据"""
+        import random
+        from datetime import datetime, timedelta
+        
+        # 生成基础性能评分
+        base_score = random.uniform(65.0, 95.0)
+        
+        # 生成性能瓶颈
+        potential_bottlenecks = [
+            {
+                "type": "cpu_intensive_queries",
+                "severity": "high",
+                "description": "发现多个CPU密集型查询，平均CPU使用率85%",
+                "affected_queries": random.randint(15, 45),
+                "impact": "查询响应时间增加40-60%"
+            },
+            {
+                "type": "memory_pressure",
+                "severity": "medium", 
+                "description": "InnoDB缓冲池命中率偏低，仅为89.2%",
+                "current_value": "89.2%",
+                "target_value": ">95%",
+                "impact": "频繁磁盘IO，影响整体性能"
+            },
+            {
+                "type": "lock_contention",
+                "severity": "medium",
+                "description": "检测到表锁等待，平均等待时间120ms",
+                "waiting_threads": random.randint(5, 20),
+                "impact": "并发性能下降"
+            },
+            {
+                "type": "slow_disk_io",
+                "severity": "low",
+                "description": "磁盘IO延迟较高，平均响应时间8ms",
+                "current_latency": "8ms",
+                "recommended_latency": "<5ms",
+                "impact": "数据读写速度受限"
+            },
+            {
+                "type": "connection_pool_exhaustion",
+                "severity": "critical",
+                "description": "连接池使用率达到95%，接近上限",
+                "current_connections": random.randint(180, 200),
+                "max_connections": 200,
+                "impact": "新连接可能被拒绝"
+            }
+        ]
+        
+        # 随机选择2-4个瓶颈
+        selected_bottlenecks = random.sample(potential_bottlenecks, random.randint(2, 4))
+        
+        # 生成优化机会
+        optimization_opportunities = [
+            {
+                "type": "index_optimization",
+                "title": "索引优化机会",
+                "description": "发现23个慢查询可通过添加索引优化",
+                "estimated_benefit": "60-80% 查询性能提升",
+                "effort": "medium",
+                "tables_affected": ["user_activity", "order_details", "product_reviews"],
+                "priority": "high"
+            },
+            {
+                "type": "query_rewriting",
+                "title": "查询重写优化",
+                "description": "发现12个可优化的复杂JOIN查询",
+                "estimated_benefit": "30-50% 查询性能提升", 
+                "effort": "high",
+                "complexity": "需要业务逻辑调整",
+                "priority": "medium"
+            },
+            {
+                "type": "partition_strategy",
+                "title": "分区表策略",
+                "description": "大表建议实施分区策略，减少查询扫描范围",
+                "estimated_benefit": "40-70% 大表查询提升",
+                "effort": "high",
+                "tables_suggested": ["transaction_log", "user_events"],
+                "priority": "medium"
+            },
+            {
+                "type": "cache_layer",
+                "title": "缓存层优化",
+                "description": "建议引入Redis缓存层，减少数据库压力",
+                "estimated_benefit": "50-80% 读取性能提升",
+                "effort": "high",
+                "infrastructure_change": True,
+                "priority": "low"
+            },
+            {
+                "type": "configuration_tuning",
+                "title": "配置参数调优",
+                "description": "18个配置参数可进一步优化",
+                "estimated_benefit": "20-40% 整体性能提升",
+                "effort": "low",
+                "immediate_impact": True,
+                "priority": "high"
+            }
+        ]
+        
+        # 随机选择3-5个优化机会
+        selected_opportunities = random.sample(optimization_opportunities, random.randint(3, 5))
+        
+        # 生成健康状态评估
+        health_factors = {
+            "cpu_utilization": random.uniform(45.0, 85.0),
+            "memory_usage": random.uniform(60.0, 90.0), 
+            "disk_io_utilization": random.uniform(30.0, 70.0),
+            "connection_efficiency": random.uniform(75.0, 95.0),
+            "query_performance": random.uniform(70.0, 90.0),
+            "replication_lag": random.uniform(0.1, 5.0),  # 秒
+            "error_rate": random.uniform(0.01, 0.5),  # 百分比
+            "deadlock_frequency": random.randint(0, 10)  # 每小时
+        }
+        
+        # 确定健康状态
+        avg_performance = (health_factors["cpu_utilization"] + health_factors["memory_usage"] + 
+                          health_factors["query_performance"]) / 3
+        
+        if avg_performance >= 85:
+            health_status = "excellent"
+            health_description = "MySQL运行状况优秀，各项指标表现良好"
+        elif avg_performance >= 75:
+            health_status = "good"
+            health_description = "MySQL运行状况良好，有少量优化空间"
+        elif avg_performance >= 60:
+            health_status = "fair"
+            health_description = "MySQL运行状况一般，建议关注性能优化"
+        else:
+            health_status = "poor"
+            health_description = "MySQL运行状况需要改进，建议立即优化"
+        
+        # 生成关键指标
+        key_metrics = {
+            "cpu_usage": round(health_factors["cpu_utilization"], 1),
+            "memory_usage": round(health_factors["memory_usage"], 1),
+            "active_connections": random.randint(25, 150),
+            "qps": random.randint(500, 5000),
+            "slow_query_ratio": round(random.uniform(0.5, 5.0), 2),
+            "innodb_buffer_pool_hit_ratio": round(random.uniform(88.0, 99.5), 2),
+            "table_locks_waited_ratio": round(random.uniform(0.1, 2.0), 2),
+            "tmp_tables_created_on_disk_ratio": round(random.uniform(5.0, 25.0), 2),
+            "handler_read_rnd_next_ratio": round(random.uniform(10.0, 50.0), 2),
+            "select_full_join_per_second": round(random.uniform(0.1, 5.0), 2)
+        }
+        
+        # 生成趋势数据
+        trend_data = []
+        base_time = datetime.now() - timedelta(hours=24)
+        for i in range(24):  # 24小时数据
+            timestamp = base_time + timedelta(hours=i)
+            trend_data.append({
+                "timestamp": timestamp.isoformat(),
+                "cpu_usage": max(0, min(100, key_metrics["cpu_usage"] + random.uniform(-10, 10))),
+                "memory_usage": max(0, min(100, key_metrics["memory_usage"] + random.uniform(-5, 5))),
+                "qps": max(0, key_metrics["qps"] + random.randint(-500, 500)),
+                "active_connections": max(0, key_metrics["active_connections"] + random.randint(-20, 20)),
+                "slow_queries": random.randint(0, 50),
+                "response_time_avg": round(random.uniform(50, 500), 2)  # ms
+            })
+        
+        return {
+            "database_id": database_id,
+            "analysis_timestamp": datetime.now().isoformat(),
+            "performance_score": round(base_score, 2),
+            "health_status": {
+                "status": health_status,
+                "description": health_description,
+                "overall_score": round(avg_performance, 2)
+            },
+            "bottlenecks": selected_bottlenecks,
+            "optimization_opportunities": selected_opportunities,
+            "key_metrics": key_metrics,
+            "health_factors": health_factors,
+            "trend_data": trend_data,
+            "recommendations_summary": {
+                "total_issues_found": len(selected_bottlenecks),
+                "optimization_opportunities": len(selected_opportunities),
+                "high_priority_items": len([item for item in selected_opportunities if item.get("priority") == "high"]),
+                "estimated_performance_gain": f"{random.randint(25, 80)}%"
+            },
+            "next_review_recommended": (datetime.now() + timedelta(days=7)).isoformat(),
+            "data_source": "enhanced_mock_insights",
+            "mock_version": "2.0"
+        }
