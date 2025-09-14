@@ -272,6 +272,14 @@ class PerformanceStatisticsResponse(BaseModel):
     trend: str  # improving, stable, worsening
 
 
+class CreateIndexTaskRequest(BaseModel):
+    """创建索引任务请求体（前端JSON）。"""
+    table_name: str
+    column_names: List[str]
+    index_type: Optional[str] = "btree"
+    reason: str
+
+
 class QueryPatternAnalysisResponse(BaseModel):
     """查询模式分析响应模型"""
     total_slow_queries: int
