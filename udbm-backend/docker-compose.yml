@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:15
+    container_name: udbm-postgres
+    environment:
+      POSTGRES_DB: udbm_db
+      POSTGRES_USER: udbm_user
+      POSTGRES_PASSWORD: udbm_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./performance_tuning_tables.sql:/docker-entrypoint-initdb.d/20_performance_tuning_tables.sql
+      - ./sample_performance_data.sql:/docker-entrypoint-initdb.d/30_sample_performance_data.sql
+    networks:
+      - udbm-network
+
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: udbm-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: udbm_root_password
+      MYSQL_DATABASE: udbm_mysql_demo
+      MYSQL_USER: udbm_mysql_user
+      MYSQL_PASSWORD: udbm_mysql_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init_mysql.sql:/docker-entrypoint-initdb.d/10_init_mysql.sql
+      - ./performance_tuning_tables_mysql.sql:/docker-entrypoint-initdb.d/20_performance_tuning_tables_mysql.sql
+      - ./sample_mysql_data.sql:/docker-entrypoint-initdb.d/30_sample_mysql_data.sql
+      - ./sample_performance_data_mysql.sql:/docker-entrypoint-initdb.d/40_sample_performance_data_mysql.sql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - udbm-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: udbm-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - udbm-network
+
+  # UDBM后端API
+  api:
+    build: .
+    container_name: udbm-api
+    environment:
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=udbm_user
+      - POSTGRES_PASSWORD=udbm_password
+      - POSTGRES_DB=udbm_db
+      - REDIS_HOST=redis
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    networks:
+      - udbm-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # pgAdmin (可选，用于数据库管理)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: udbm-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@udbm.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - udbm-network
+
+volumes:
+  postgres_data:
+  mysql_data:
+  redis_data:
+
+networks:
+  udbm-network:
+    driver: bridge
