@@ -486,6 +486,221 @@ class _MySQLSlowQueries:
         return {"period": f"{days}天", "total_queries": 0, "slow_queries": 0, "slow_query_percentage": 0.0, "avg_execution_time": 0.0, "max_execution_time": 0.0, "queries_per_second": 0.0, "trend": "stable"}
 
 
+class _MySQLIndexing:
+    def __init__(self, session: Session):
+        self._session = session
+
+    def _engine(self):
+        from sqlalchemy import create_engine
+        return create_engine(
+            "mysql+pymysql://udbm_mysql_user:udbm_mysql_password@localhost:3306/udbm_mysql_demo",
+            echo=False
+        )
+
+    def list_suggestions(self, database_id: int, status: Optional[str], limit: int) -> List[Dict[str, Any]]:
+        from sqlalchemy import text
+        engine = self._engine()
+        where = "WHERE database_id = :db_id"
+        params: Dict[str, Any] = {"db_id": database_id, "limit": limit}
+        if status:
+            where += " AND status = :status"
+            params["status"] = status
+        sql = f"""
+            SELECT id, database_id, table_name, column_names, index_type, suggestion_type,
+                   reason, impact_score, estimated_improvement, status, applied_at,
+                   applied_by, related_query_ids, created_at, updated_at
+            FROM index_suggestions
+            {where}
+            ORDER BY impact_score DESC
+            LIMIT :limit
+        """
+        suggestions: List[Dict[str, Any]] = []
+        with engine.connect() as conn:
+            rows = conn.execute(text(sql), params).fetchall()
+            # 若根据database_id无数据，回退到不限定database_id（演示环境容错）
+            if not rows:
+                fallback_sql = sql.replace("WHERE database_id = :db_id", "WHERE 1=1")
+                rows = conn.execute(text(fallback_sql), {k: v for k, v in params.items() if k != "db_id"}).fetchall()
+            for row in rows:
+                # MySQL JSON comes as string/dict depending on driver; normalize to list
+                cols = row.column_names
+                if isinstance(cols, str):
+                    try:
+                        import json as _json
+                        cols = _json.loads(cols)
+                    except Exception:
+                        cols = [cols]
+                related_ids = row.related_query_ids
+                if isinstance(related_ids, str):
+                    try:
+                        import json as _json
+                        related_ids = _json.loads(related_ids)
+                    except Exception:
+                        related_ids = []
+                suggestions.append({
+                    "id": row.id,
+                    "database_id": row.database_id,
+                    "table_name": row.table_name,
+                    "column_names": cols or [],
+                    "index_type": row.index_type,
+                    "reason": row.reason,
+                    "impact_score": float(row.impact_score) if row.impact_score is not None else 0.0,
+                    "estimated_improvement": row.estimated_improvement,
+                    "status": row.status,
+                    "applied_at": row.applied_at,
+                    "applied_by": row.applied_by,
+                    "related_query_ids": related_ids or [],
+                    "created_at": row.created_at,
+                    # 添加数据源标识，便于前端提示
+                    "source": "mysql_demo"
+                })
+        return suggestions
+
+
+class _MySQLTasks:
+    def __init__(self, session: Session):
+        self._session = session
+
+    def _engine(self):
+        from sqlalchemy import create_engine
+        return create_engine(
+            "mysql+pymysql://udbm_mysql_user:udbm_mysql_password@localhost:3306/udbm_mysql_demo",
+            echo=False
+        )
+
+    def list(self, database_id: int, status: Optional[str], limit: int) -> List[Dict[str, Any]]:
+        from sqlalchemy import text
+        engine = self._engine()
+        where = "WHERE database_id = :db_id"
+        params: Dict[str, Any] = {"db_id": database_id, "limit": limit}
+        if status:
+            where += " AND status = :status"
+            params["status"] = status
+        sql = f"""
+            SELECT id, database_id, task_type, task_name, description, task_config,
+                   execution_sql, status, priority, execution_result, error_message,
+                   scheduled_at, started_at, completed_at, related_suggestion_id,
+                   created_by, created_at, updated_at
+            FROM tuning_tasks
+            {where}
+            ORDER BY created_at DESC
+            LIMIT :limit
+        """
+        tasks: List[Dict[str, Any]] = []
+        with engine.connect() as conn:
+            rows = conn.execute(text(sql), params).fetchall()
+            if not rows:
+                fallback_sql = sql.replace("WHERE database_id = :db_id", "WHERE 1=1")
+                rows = conn.execute(text(fallback_sql), {k: v for k, v in params.items() if k != "db_id"}).fetchall()
+            for row in rows:
+                cfg = row.task_config
+                if isinstance(cfg, str):
+                    try:
+                        import json as _json
+                        cfg = _json.loads(cfg)
+                    except Exception:
+                        cfg = {}
+                tasks.append({
+                    "id": row.id,
+                    "database_id": row.database_id,
+                    "task_type": row.task_type,
+                    "task_name": row.task_name,
+                    "description": row.description,
+                    "task_config": cfg,
+                    "execution_sql": row.execution_sql,
+                    "status": row.status,
+                    "priority": int(row.priority) if row.priority is not None else 1,
+                    "execution_result": row.execution_result,
+                    "error_message": row.error_message,
+                    "scheduled_at": row.scheduled_at,
+                    "started_at": row.started_at,
+                    "completed_at": row.completed_at,
+                    "related_suggestion_id": row.related_suggestion_id,
+                    "created_at": row.created_at,
+                    "source": "mysql_demo"
+                })
+        return tasks
+
+    def create_index_task(self, database_id: int, table_name: str, columns: List[str], index_type: str, reason: str) -> Dict[str, Any]:
+        from sqlalchemy import text
+        import json as _json
+        engine = self._engine()
+        index_name = f"idx_{table_name}_{'_'.join(columns)}"
+        execution_sql = f"CREATE INDEX {index_name} ON {table_name} ({', '.join(columns)});"
+
+        suggestion_id: Optional[int] = None
+        with engine.begin() as conn:
+            # 尝试查找现有建议
+            res = conn.execute(
+                text(
+                    """
+                    SELECT id FROM index_suggestions
+                    WHERE database_id = :db_id AND table_name = :tbl AND status = 'pending'
+                    LIMIT 1
+                    """
+                ),
+                {"db_id": database_id, "tbl": table_name}
+            ).fetchone()
+            if res:
+                suggestion_id = int(res[0])
+            else:
+                # 创建建议
+                ins = conn.execute(
+                    text(
+                        """
+                        INSERT INTO index_suggestions
+                        (database_id, table_name, column_names, index_type, suggestion_type, reason, impact_score, estimated_improvement, status, related_query_ids)
+                        VALUES (:db_id, :tbl, :cols, :idx_type, 'missing', :reason, :impact, :impr, 'pending', JSON_ARRAY())
+                        """
+                    ),
+                    {
+                        "db_id": database_id,
+                        "tbl": table_name,
+                        "cols": _json.dumps(columns),
+                        "idx_type": index_type,
+                        "reason": reason,
+                        "impact": 75.0,
+                        "impr": "预计提升 60-80% 查询性能"
+                    }
+                )
+                suggestion_id = ins.lastrowid
+
+            # 创建任务
+            task_cfg = {
+                "table_name": table_name,
+                "columns": columns,
+                "index_type": index_type,
+                "index_name": index_name,
+                "reason": reason,
+            }
+            task_ins = conn.execute(
+                text(
+                    """
+                    INSERT INTO tuning_tasks
+                    (database_id, task_type, task_name, description, task_config, execution_sql, status, priority, related_suggestion_id)
+                    VALUES (:db_id, 'index_creation', :name, :desc, :cfg, :sql, 'pending', :priority, :sid)
+                    """
+                ),
+                {
+                    "db_id": database_id,
+                    "name": f"为表 {table_name} 创建索引",
+                    "desc": f"创建 {index_name} 索引以优化查询性能",
+                    "cfg": _json.dumps(task_cfg),
+                    "sql": execution_sql,
+                    "priority": 4,
+                    "sid": suggestion_id
+                }
+            )
+            task_id = task_ins.lastrowid
+
+        return {
+            "message": "索引优化任务创建成功",
+            "task_id": task_id,
+            "suggestion_id": suggestion_id,
+            "execution_sql": execution_sql
+        }
+
+
 class _MySQLConfig:
     def __init__(self, session: Session):
         self._o = MySQLConfigOptimizer(session)
@@ -523,4 +738,7 @@ class MySQLProvider:
         self.slow_queries = _MySQLSlowQueries(session)
         self.optimizer = _MySQLConfig(session)
         self.executor = _MySQLExecutor(session)
+        # 新增：MySQL索引建议与任务读取能力
+        self.indexing = _MySQLIndexing(session)
+        self.tasks = _MySQLTasks(session)
 

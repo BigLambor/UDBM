@@ -33,7 +33,7 @@ from app.schemas.performance_tuning import (
     ExecutionPlanResponse, TuningTaskResponse, SystemDiagnosisResponse,
     PerformanceDashboardResponse, QueryAnalysisRequest, QueryAnalysisResponse,
     TaskExecutionRequest, TaskExecutionResponse, PerformanceStatisticsResponse,
-    QueryPatternAnalysisResponse
+    QueryPatternAnalysisResponse, CreateIndexTaskRequest
 )
 from app.services.performance_tuning import (
     SlowQueryAnalyzer, SystemMonitor, TuningExecutor, ExecutionPlanAnalyzer
@@ -337,6 +337,15 @@ async def get_tuning_tasks(
 ):
     """获取调优任务列表"""
     try:
+        # 优先通过Provider分发（支持MySQL）
+        provider = get_provider(get_sync_db_session(), database_id or 0)
+        if hasattr(provider, "tasks") and database_id:
+            try:
+                return provider.tasks.list(database_id, status, limit)
+            except Exception:
+                # 回退到本地ORM
+                pass
+
         session = get_db_session(db)
         query = session.query(TuningTask)
 
@@ -348,11 +357,10 @@ async def get_tuning_tasks(
 
         tasks = query.order_by(TuningTask.created_at.desc()).limit(limit).all()
 
-        # 为每个任务添加数据源标识
         result = []
         for task in tasks:
             task_dict = TuningTaskResponse.from_orm(task).dict()
-            task_dict['source'] = 'mock_data'  # MySQL数据标记为演示数据
+            task_dict['source'] = 'mock_data'
             result.append(task_dict)
         return result
     except Exception as e:
@@ -362,20 +370,34 @@ async def get_tuning_tasks(
 @router.post("/tasks/{database_id}/create-index")
 async def create_index_task(
     database_id: int,
-    table_name: str = Query(..., min_length=1),
-    column_names: List[str] = Query(..., min_items=1),
-    index_type: str = Query("btree"),
-    reason: str = Query(...),
-    executor: TuningExecutor = Depends(get_tuning_executor)
+    request: CreateIndexTaskRequest,
+    executor: TuningExecutor = Depends(get_tuning_executor),
+    db: AsyncSession = Depends(get_db)
 ):
-    """创建索引优化任务"""
+    """创建索引优化任务（前端以JSON提交）。对MySQL走Provider直连写入。"""
     try:
-        # 查找相关建议
-        session = get_db_session(await get_db())
+        # 若为MySQL，使用Provider在MySQL演示库写入
+        provider = get_provider(get_sync_db_session(), database_id)
+        if hasattr(provider, "tasks") and hasattr(provider, "indexing"):
+            try:
+                result = provider.tasks.create_index_task(
+                    database_id,
+                    request.table_name,
+                    request.column_names,
+                    request.index_type or "btree",
+                    request.reason
+                )
+                return result
+            except Exception:
+                # 回退到本地ORM逻辑
+                pass
+
+        # PostgreSQL/默认：在本地ORM中创建
+        session = get_db_session(db)
         suggestion = session.query(IndexSuggestion)\
             .filter(
                 IndexSuggestion.database_id == database_id,
-                IndexSuggestion.table_name == table_name,
+                IndexSuggestion.table_name == request.table_name,
                 IndexSuggestion.status == "pending"
             )\
             .first()
@@ -383,14 +405,13 @@ async def create_index_task(
         if suggestion:
             task = executor.create_index_suggestion_task(suggestion)
         else:
-            # 创建新的建议和任务
             suggestion_data = {
                 "database_id": database_id,
-                "table_name": table_name,
-                "column_names": column_names,
-                "index_type": index_type,
-                "reason": reason,
-                "impact_score": 75.0,  # 默认影响评分
+                "table_name": request.table_name,
+                "column_names": request.column_names,
+                "index_type": request.index_type or "btree",
+                "reason": request.reason,
+                "impact_score": 75.0,
                 "estimated_improvement": "预计提升 60-80% 查询性能"
             }
             suggestion = IndexSuggestion(**suggestion_data)
@@ -447,8 +468,16 @@ async def get_index_suggestions(
     limit: int = Query(50, ge=1, le=500),
     db: AsyncSession = Depends(get_db)
 ):
-    """获取索引建议列表"""
+    """获取索引建议列表（优先通过Provider从MySQL演示库读取）。"""
     try:
+        provider = get_provider(get_sync_db_session(), database_id)
+        if hasattr(provider, "indexing"):
+            try:
+                return provider.indexing.list_suggestions(database_id, status, limit)
+            except Exception:
+                # 回退到本地ORM
+                pass
+
         session = get_db_session(db)
         query = session.query(IndexSuggestion)\
             .filter(IndexSuggestion.database_id == database_id)
@@ -460,11 +489,10 @@ async def get_index_suggestions(
             .limit(limit)\
             .all()
 
-        # 为每个建议添加数据源标识
         result = []
         for suggestion in suggestions:
             suggestion_dict = IndexSuggestionResponse.from_orm(suggestion).dict()
-            suggestion_dict['source'] = 'mock_data'  # MySQL数据标记为演示数据
+            suggestion_dict['source'] = 'mock_data'
             result.append(suggestion_dict)
         return result
     except Exception as e:
