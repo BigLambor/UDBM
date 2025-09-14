@@ -494,6 +494,92 @@ async def get_index_suggestions(
             suggestion_dict = IndexSuggestionResponse.from_orm(suggestion).dict()
             suggestion_dict['source'] = 'mock_data'
             result.append(suggestion_dict)
+        # 若无数据，返回一组Mock建议以便前端展示
+        if not result:
+            from datetime import datetime as _dt
+            mock_items = [
+                {
+                    "id": 10001,
+                    "database_id": database_id,
+                    "table_name": "orders",
+                    "column_names": ["user_id"],
+                    "index_type": "btree",
+                    "reason": "WHERE user_id 过滤频繁，缺少索引导致全表扫描",
+                    "impact_score": 88.5,
+                    "estimated_improvement": "预计提升 60-80% 查询性能",
+                    "status": "pending",
+                    "applied_at": None,
+                    "applied_by": None,
+                    "related_query_ids": [101, 102],
+                    "created_at": _dt.now(),
+                    "source": "mock_data"
+                },
+                {
+                    "id": 10002,
+                    "database_id": database_id,
+                    "table_name": "orders",
+                    "column_names": ["status", "created_at"],
+                    "index_type": "btree",
+                    "reason": "按状态与时间排序/过滤，建议联合索引",
+                    "impact_score": 82.0,
+                    "estimated_improvement": "预计提升 40-60% 查询性能",
+                    "status": "pending",
+                    "applied_at": None,
+                    "applied_by": None,
+                    "related_query_ids": [103],
+                    "created_at": _dt.now(),
+                    "source": "mock_data"
+                },
+                {
+                    "id": 10003,
+                    "database_id": database_id,
+                    "table_name": "transactions",
+                    "column_names": ["created_at"],
+                    "index_type": "btree",
+                    "reason": "时间范围查询较多，缺少时间列索引",
+                    "impact_score": 79.0,
+                    "estimated_improvement": "预计提升 35-55% 查询性能",
+                    "status": "pending",
+                    "applied_at": None,
+                    "applied_by": None,
+                    "related_query_ids": [104, 105],
+                    "created_at": _dt.now(),
+                    "source": "mock_data"
+                },
+                {
+                    "id": 10004,
+                    "database_id": database_id,
+                    "table_name": "products",
+                    "column_names": ["category_id", "price"],
+                    "index_type": "btree",
+                    "reason": "分类+价格区间查询频繁，建议联合索引",
+                    "impact_score": 76.5,
+                    "estimated_improvement": "预计提升 30-50% 查询性能",
+                    "status": "pending",
+                    "applied_at": None,
+                    "applied_by": None,
+                    "related_query_ids": [106],
+                    "created_at": _dt.now(),
+                    "source": "mock_data"
+                },
+                {
+                    "id": 10005,
+                    "database_id": database_id,
+                    "table_name": "logs",
+                    "column_names": ["message"],
+                    "index_type": "fulltext",
+                    "reason": "模糊匹配日志内容，建议FULLTEXT索引",
+                    "impact_score": 72.0,
+                    "estimated_improvement": "预计提升 50-70% 文本检索性能",
+                    "status": "pending",
+                    "applied_at": None,
+                    "applied_by": None,
+                    "related_query_ids": [107],
+                    "created_at": _dt.now(),
+                    "source": "mock_data"
+                }
+            ]
+            return mock_items[:limit]
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取索引建议失败: {str(e)}")
