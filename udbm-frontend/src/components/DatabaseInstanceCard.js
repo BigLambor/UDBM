@@ -124,7 +124,7 @@ const DatabaseInstanceCard = ({
         position: 'relative',
         overflow: 'hidden'
       }}
-      bodyStyle={{ padding: '16px' }}
+      bodyStyle={{ padding: '20px' }}
       className="database-instance-card"
     >
       {/* 健康状态指示条 */}
@@ -260,80 +260,80 @@ const DatabaseInstanceCard = ({
         )}
       </div>
 
-      {/* 关键性能指标 - 突出显示 */}
+      {/* 关键性能指标 - 简化版 */}
       <div style={{ 
-        marginBottom: 12,
-        padding: '12px',
+        marginBottom: 16,
+        padding: '16px',
         background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-        borderRadius: '8px',
+        borderRadius: '10px',
         border: '1px solid #e9ecef'
       }}>
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr 1fr',
-          gap: '12px',
+          gap: '16px',
           textAlign: 'center'
         }}>
           <div>
             <div style={{ 
-              fontSize: '18px', 
+              fontSize: '20px', 
               fontWeight: 'bold',
               color: getPerformanceColor(performanceData.cpuUsage),
-              marginBottom: '2px'
+              marginBottom: '4px'
             }}>
               {performanceData.cpuUsage}%
             </div>
-            <div style={{ fontSize: '10px', color: '#666', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '11px', color: '#666', textTransform: 'uppercase', fontWeight: '500' }}>
               CPU
             </div>
           </div>
           <div>
             <div style={{ 
-              fontSize: '18px', 
+              fontSize: '20px', 
               fontWeight: 'bold',
               color: getPerformanceColor(performanceData.memoryUsage),
-              marginBottom: '2px'
+              marginBottom: '4px'
             }}>
               {performanceData.memoryUsage}%
             </div>
-            <div style={{ fontSize: '10px', color: '#666', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '11px', color: '#666', textTransform: 'uppercase', fontWeight: '500' }}>
               内存
             </div>
           </div>
           <div>
             <div style={{ 
-              fontSize: '18px', 
+              fontSize: '20px', 
               fontWeight: 'bold',
               color: getPerformanceColor(performanceData.connectionCount, { warning: 150, critical: 180 }),
-              marginBottom: '2px'
+              marginBottom: '4px'
             }}>
               {performanceData.connectionCount}
             </div>
-            <div style={{ fontSize: '10px', color: '#666', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '11px', color: '#666', textTransform: 'uppercase', fontWeight: '500' }}>
               连接数
             </div>
           </div>
         </div>
       </div>
 
-      {/* 底部信息 - 简化版 */}
+      {/* 底部信息 - 优化版 */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center',
-        paddingTop: 8,
+        paddingTop: 12,
         borderTop: '1px solid #f0f0f0',
-        fontSize: '11px',
+        fontSize: '12px',
         color: '#8c8c8c'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <ClockCircleOutlined style={{ fontSize: '10px' }} />
-          <span>{formatLastCheck(performanceData.lastCheck)}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <ClockCircleOutlined style={{ fontSize: '12px' }} />
+          <span style={{ fontWeight: '500' }}>{formatLastCheck(performanceData.lastCheck)}</span>
         </div>
         
         {showActions && (
-          <Space size={4}>
-            <Tooltip title="配置">
+          <Space size={6}>
+            <Tooltip title="配置管理">
               <Button
                 type="text"
                 size="small"
@@ -342,10 +342,16 @@ const DatabaseInstanceCard = ({
                   e.stopPropagation();
                   onConfig?.(database);
                 }}
-                style={{ fontSize: '12px', padding: '2px 4px' }}
+                style={{ 
+                  fontSize: '12px', 
+                  padding: '4px 6px',
+                  color: '#8c8c8c',
+                  border: 'none',
+                  boxShadow: 'none'
+                }}
               />
             </Tooltip>
-            <Tooltip title="监控">
+            <Tooltip title="性能监控">
               <Button
                 type="text"
                 size="small"
@@ -354,7 +360,13 @@ const DatabaseInstanceCard = ({
                   e.stopPropagation();
                   onMonitor?.(database);
                 }}
-                style={{ fontSize: '12px', padding: '2px 4px' }}
+                style={{ 
+                  fontSize: '12px', 
+                  padding: '4px 6px',
+                  color: '#8c8c8c',
+                  border: 'none',
+                  boxShadow: 'none'
+                }}
               />
             </Tooltip>
           </Space>

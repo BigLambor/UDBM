@@ -49,8 +49,8 @@ class Settings(BaseSettings):
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     # 数据库连接池配置
-    SQLALCHEMY_POOL_SIZE: int = 20
-    SQLALCHEMY_MAX_OVERFLOW: int = 30
+    SQLALCHEMY_POOL_SIZE: int = 5  # 减少基础连接池大小
+    SQLALCHEMY_MAX_OVERFLOW: int = 10  # 减少最大溢出连接数
     SQLALCHEMY_POOL_TIMEOUT: int = 30
     SQLALCHEMY_POOL_RECYCLE: int = 1800
 

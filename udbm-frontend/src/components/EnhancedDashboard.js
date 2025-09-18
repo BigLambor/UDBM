@@ -587,29 +587,29 @@ const EnhancedDashboard = () => {
           </Space>
         </div>
         
-        <Row gutter={[16, 16]}>
+        <div className="database-instance-grid">
           {filteredDatabases.map(db => {
             const typeConfig = DATABASE_TYPES[db.type] || { icon: '🗃️', color: '#666', name: db.type };
             
             return (
-              <Col xs={24} sm={12} md={8} lg={6} key={db.id}>
+              <div key={db.id} className="database-instance-card">
                 <Card 
                   size="small" 
                   hoverable
-                  bodyStyle={{ padding: '12px' }}
+                  bodyStyle={{ padding: '16px' }}
                   style={{ height: '100%' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
-                    <span style={{ fontSize: '20px', marginRight: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ fontSize: '24px', marginRight: 12 }}>
                       {typeConfig.icon}
                     </span>
-                    <strong style={{ fontSize: '14px', flex: 1 }}>{db.name}</strong>
+                    <strong style={{ fontSize: '16px', flex: 1 }}>{db.name}</strong>
                     <Badge 
                       status={db.health_status === 'healthy' ? 'success' : 
                              db.health_status === 'warning' ? 'warning' : 'error'} 
                     />
                   </div>
-                  <div style={{ fontSize: '12px', color: '#666', marginBottom: 4 }}>
+                  <div style={{ fontSize: '13px', color: '#666', marginBottom: 8 }}>
                     {db.host}:{db.port}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -624,10 +624,10 @@ const EnhancedDashboard = () => {
                     </Tag>
                   </div>
                 </Card>
-              </Col>
+              </div>
             );
           })}
-        </Row>
+        </div>
       </Card>
     </div>
   );

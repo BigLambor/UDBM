@@ -1226,10 +1226,25 @@ class SlowQueryAnalyzer:
             if "-" in improvement_text:
                 # 范围格式，如 "30-60%"
                 parts = improvement_text.replace("%", "").split("-")
-                avg = (int(parts[0]) + int(parts[1])) / 2
-                improvements.append(avg)
+                try:
+                    # 提取数字部分，处理 "50-80% 性能提升" 这样的格式
+                    part1 = ''.join(filter(str.isdigit, parts[0]))
+                    part2 = ''.join(filter(str.isdigit, parts[1]))
+                    if part1 and part2:
+                        avg = (int(part1) + int(part2)) / 2
+                        improvements.append(avg)
+                except (ValueError, IndexError):
+                    improvements.append(0)
             elif "%" in improvement_text:
-                improvements.append(int(improvement_text.replace("%", "")))
+                try:
+                    # 提取数字部分
+                    num_part = ''.join(filter(str.isdigit, improvement_text))
+                    if num_part:
+                        improvements.append(int(num_part))
+                    else:
+                        improvements.append(0)
+                except ValueError:
+                    improvements.append(0)
             else:
                 improvements.append(0)
 
@@ -1354,14 +1369,43 @@ class SlowQueryAnalyzer:
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
 
-        # Mock statistics
+        # 查询实际的慢查询统计信息
+        slow_queries = self.db.query(SlowQuery).filter(
+            SlowQuery.database_id == database_id,
+            SlowQuery.created_at >= start_date,
+            SlowQuery.created_at <= end_date
+        ).all()
+
+        if slow_queries:
+            total_queries = len(slow_queries)
+            slow_queries_count = len([q for q in slow_queries if q.execution_time > 1.0])
+            avg_execution_time = sum(q.execution_time for q in slow_queries) / total_queries
+            max_execution_time = max(q.execution_time for q in slow_queries)
+            slow_query_percentage = (slow_queries_count / total_queries * 100) if total_queries > 0 else 0.0
+            queries_per_second = total_queries / (days * 24 * 3600) if days > 0 else 0.0
+            
+            # 判断趋势
+            trend = "stable"
+            if slow_query_percentage > 10:
+                trend = "worsening"
+            elif slow_query_percentage < 2:
+                trend = "improving"
+        else:
+            total_queries = 0
+            slow_queries_count = 0
+            avg_execution_time = 0.0
+            max_execution_time = 0.0
+            slow_query_percentage = 0.0
+            queries_per_second = 0.0
+            trend = "stable"
+
         return {
             "period": f"{days}天",
-            "total_queries": 15420,
-            "slow_queries": 287,
-            "slow_query_percentage": 1.86,
-            "avg_execution_time": 0.23,
-            "max_execution_time": 12.5,
-            "queries_per_second": 45.2,
-            "trend": "improving"  # improving, stable, worsening
+            "total_queries": total_queries,
+            "slow_queries": slow_queries_count,
+            "slow_query_percentage": round(slow_query_percentage, 2),
+            "avg_execution_time": round(avg_execution_time, 3),
+            "max_execution_time": round(max_execution_time, 3),
+            "queries_per_second": round(queries_per_second, 2),
+            "trend": trend
         }

@@ -15,19 +15,36 @@ body {
   text-align: center;
 }
 
-/* Logo样式 */
+/* Logo样式 - 现代化设计 */
 .logo {
-  background: linear-gradient(135deg, #1f1f1f 0%, #2c2c2c 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.logo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.6s;
 }
 
 .logo:hover {
-  background: linear-gradient(135deg, #2c2c2c 0%, #3a3a3a 100%);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #1a1f2e 0%, #2a3441 100%);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+.logo:hover::before {
+  left: 100%;
 }
 
 /* 布局背景样式 */
@@ -155,34 +172,71 @@ body {
   color: #1890ff;
 }
 
-/* 菜单样式优化 */
+/* 菜单样式优化 - 符合2024年最佳实践 */
+.ant-menu-dark {
+  background: linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
 .ant-menu-dark .ant-menu-item-selected {
-  background-color: #1890ff;
-  border-radius: 6px;
-  margin: 4px 8px;
+  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
+  border-radius: 8px;
+  margin: 4px 12px;
   width: auto;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ant-menu-dark .ant-menu-item-selected::after {
+  display: none;
 }
 
 .ant-menu-dark .ant-menu-item {
-  margin: 4px 8px;
+  margin: 4px 12px;
   width: auto;
-  border-radius: 6px;
-  transition: all 0.3s;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
 }
 
 .ant-menu-dark .ant-menu-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
+  transform: translateX(2px);
 }
 
 .ant-menu-dark .ant-menu-submenu-title {
-  margin: 4px 8px;
+  margin: 4px 12px;
   width: auto;
-  border-radius: 6px;
-  transition: all 0.3s;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
 }
 
 .ant-menu-dark .ant-menu-submenu-title:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
+  transform: translateX(2px);
+}
+
+.ant-menu-dark .ant-menu-submenu-open > .ant-menu-submenu-title {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ant-menu-dark .ant-menu-submenu .ant-menu-item {
+  margin: 2px 8px 2px 24px;
+  padding-left: 16px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.ant-menu-dark .ant-menu-submenu .ant-menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateX(4px);
 }
 
 /* 标签样式优化 */
@@ -379,13 +433,65 @@ body {
   }
 }
 
-/* 深色模式支持 */
+/* 数据库实例卡片布局优化 */
+.database-instance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 8px 0;
+}
+
+.database-instance-card {
+  min-height: 200px;
+  transition: all 0.3s ease;
+}
+
+/* 响应式数据库实例卡片 */
+@media (max-width: 1200px) {
+  .database-instance-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 992px) {
+  .database-instance-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  
+  .database-instance-card {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  .database-instance-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .database-instance-card {
+    min-height: 160px;
+  }
+}
+
+/* 深色模式支持 - 增强版 */
 @media (prefers-color-scheme: dark) {
   .ant-menu-dark {
-    background: #141414;
+    background: linear-gradient(180deg, #0a0e13 0%, #151a24 100%);
   }
 
   .ant-menu-dark .ant-menu-item-selected {
-    background-color: #1890ff;
+    background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
+    box-shadow: 0 2px 12px rgba(24, 144, 255, 0.3);
+  }
+
+  .logo {
+    background: linear-gradient(135deg, #0a0e13 0%, #151a24 100%);
+  }
+
+  .logo:hover {
+    background: linear-gradient(135deg, #151a24 0%, #1f2530 100%);
   }
 }

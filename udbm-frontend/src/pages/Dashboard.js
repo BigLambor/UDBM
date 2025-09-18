@@ -724,9 +724,9 @@ const Dashboard = () => {
               onRefresh={fetchDashboardData}
             />
           ) : (
-            <Row gutter={[16, 16]}>
+            <div className="database-instance-grid">
               {dashboardData.databases.slice(0, 8).map(db => (
-                <Col xs={24} sm={12} md={8} lg={6} key={db.id}>
+                <div key={db.id} className="database-instance-card">
                   <DatabaseInstanceCard
                     database={db}
                     onClick={() => {
@@ -747,9 +747,9 @@ const Dashboard = () => {
                     }}
                     showActions={true}
                   />
-                </Col>
+                </div>
               ))}
-            </Row>
+            </div>
           )}
           
           {/* 如果实例数量超过8个且为概览模式，显示更多按钮 */}

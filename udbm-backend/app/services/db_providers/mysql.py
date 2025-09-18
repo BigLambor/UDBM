@@ -483,7 +483,77 @@ class _MySQLSlowQueries:
         return {"total_slow_queries": 0, "avg_execution_time": 0.0, "most_common_patterns": [], "top_tables": [], "recommendations": ["开启performance_schema"]}
 
     def statistics(self, database_id: int, days: int = 7) -> Dict[str, Any]:
-        return {"period": f"{days}天", "total_queries": 0, "slow_queries": 0, "slow_query_percentage": 0.0, "avg_execution_time": 0.0, "max_execution_time": 0.0, "queries_per_second": 0.0, "trend": "stable"}
+        # 连接到MySQL数据库查询统计信息
+        from sqlalchemy import create_engine, text
+        from datetime import datetime, timedelta
+        
+        # 创建MySQL连接
+        mysql_engine = create_engine(
+            f"mysql+pymysql://udbm_mysql_user:udbm_mysql_password@localhost:3306/udbm_mysql_demo",
+            echo=False
+        )
+        
+        with mysql_engine.connect() as conn:
+            # 计算时间范围
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=days)
+            
+            # 获取慢查询统计
+            result = conn.execute(text("""
+                SELECT 
+                    COUNT(*) as total_queries,
+                    COUNT(CASE WHEN execution_time > 1.0 THEN 1 END) as slow_queries,
+                    AVG(execution_time) as avg_execution_time,
+                    MAX(execution_time) as max_execution_time
+                FROM slow_queries 
+                WHERE database_id = :db_id 
+                AND created_at >= :start_date 
+                AND created_at <= :end_date
+            """), {
+                "db_id": database_id, 
+                "start_date": start_date, 
+                "end_date": end_date
+            })
+            
+            stats = result.fetchone()
+            
+            if stats and stats[0] is not None:
+                total_queries = stats[0] or 0
+                slow_queries = stats[1] or 0
+                avg_execution_time = stats[2] or 0.0
+                max_execution_time = stats[3] or 0.0
+                
+                # 计算慢查询占比
+                slow_query_percentage = (slow_queries / total_queries * 100) if total_queries > 0 else 0.0
+                
+                # 计算每秒查询数（基于时间范围）
+                queries_per_second = total_queries / (days * 24 * 3600) if days > 0 else 0.0
+                
+                # 判断趋势（简化版本，基于慢查询占比）
+                trend = "stable"
+                if slow_query_percentage > 10:
+                    trend = "worsening"
+                elif slow_query_percentage < 2:
+                    trend = "improving"
+            else:
+                total_queries = 0
+                slow_queries = 0
+                avg_execution_time = 0.0
+                max_execution_time = 0.0
+                slow_query_percentage = 0.0
+                queries_per_second = 0.0
+                trend = "stable"
+            
+            return {
+                "period": f"{days}天",
+                "total_queries": total_queries,
+                "slow_queries": slow_queries,
+                "slow_query_percentage": round(slow_query_percentage, 2),
+                "avg_execution_time": round(avg_execution_time, 3),
+                "max_execution_time": round(max_execution_time, 3),
+                "queries_per_second": round(queries_per_second, 2),
+                "trend": trend
+            }
 
 
 class _MySQLConfig:
