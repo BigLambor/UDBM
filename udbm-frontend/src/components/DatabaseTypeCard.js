@@ -28,6 +28,14 @@ const DATABASE_TYPE_CONFIG = {
     description: '流行的关系型数据库',
     features: ['高性能', '易用性', '社区支持']
   },
+  oceanbase: {
+    name: 'OceanBase',
+    icon: '🌊',
+    color: '#3b82f6',
+    gradient: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
+    description: '分布式云原生数据库',
+    features: ['高可用', '水平扩展', 'MySQL/Oracle兼容']
+  },
   mongodb: {
     name: 'MongoDB',
     icon: '🍃',

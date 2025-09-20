@@ -48,6 +48,10 @@ const PerformanceDashboard = () => {
   const [mysqlConfigAnalysis, setMysqlConfigAnalysis] = useState(null);
   const [mysqlOptimizationSummary, setMysqlOptimizationSummary] = useState(null);
   
+  // OceanBase 特有数据（复用configAnalysis/vacuumStrategy槽位）
+  const [oceanBaseConfigAnalysis, setOceanBaseConfigAnalysis] = useState(null);
+  const [oceanBaseMaintenance, setOceanBaseMaintenance] = useState(null);
+  
   const [loadingStates, setLoadingStates] = useState({
     dashboard: false,
     monitoring: false,
@@ -83,6 +87,10 @@ const PerformanceDashboard = () => {
       // 如果是MySQL，获取特有数据
       if (selectedDatabase.type === 'mysql') {
         fetchMySQLSpecificData();
+      }
+      // 如果是OceanBase，获取特有数据
+      if (selectedDatabase.type === 'oceanbase') {
+        fetchOceanBaseSpecificData();
       }
     }
   }, [selectedDatabase]);
@@ -238,6 +246,38 @@ const PerformanceDashboard = () => {
     }
   };
 
+  // 获取OceanBase特有数据
+  const fetchOceanBaseSpecificData = async () => {
+    if (!selectedDatabase || !selectedDatabase.id) {
+      console.warn('没有选择数据库实例');
+      return;
+    }
+
+    setLoadingStates(prev => ({ ...prev, postgres: true }));
+    setErrorStates(prev => ({ ...prev, postgres: null }));
+
+    try {
+      const [config, maintenance] = await Promise.all([
+        performanceAPI.analyzeOceanBaseConfig(selectedDatabase.id),
+        performanceAPI.getOceanBaseMaintenanceStrategy(selectedDatabase.id)
+      ]);
+
+      setOceanBaseConfigAnalysis(config);
+      setOceanBaseMaintenance(maintenance);
+      // 将OceanBase数据复用到通用槽位，便于下游组件显示
+      setConfigAnalysis(config);
+      setVacuumStrategy(maintenance);
+    } catch (error) {
+      console.error('获取OceanBase特有数据失败:', error);
+      setErrorStates(prev => ({
+        ...prev,
+        postgres: error.message || '获取OceanBase特有数据失败'
+      }));
+    } finally {
+      setLoadingStates(prev => ({ ...prev, postgres: false }));
+    }
+  };
+
   const fetchAlerts = async () => {
     if (!selectedDatabase || !selectedDatabase.id) {
       console.warn('没有选择数据库实例');
@@ -361,6 +401,8 @@ const PerformanceDashboard = () => {
       promises.push(fetchPostgreSQLSpecificData());
     } else if (selectedDatabase?.type === 'mysql') {
       promises.push(fetchMySQLSpecificData());
+    } else if (selectedDatabase?.type === 'oceanbase') {
+      promises.push(fetchOceanBaseSpecificData());
     }
 
     await Promise.all(promises);

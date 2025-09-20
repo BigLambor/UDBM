@@ -40,6 +40,7 @@ from app.services.performance_tuning import (
 )
 from app.services.performance_tuning.postgres_config_optimizer import PostgreSQLConfigOptimizer
 from app.services.performance_tuning.mysql_enhanced_optimizer import MySQLEnhancedOptimizer
+from app.services.performance_tuning.oceanbase_config_optimizer import OceanBaseConfigOptimizer
 from app.services.db_providers.registry import get_provider, get_database_type_name
 
 router = APIRouter()
@@ -89,6 +90,10 @@ def get_postgres_config_optimizer(session: Session = Depends(get_sync_db_session
 def get_mysql_enhanced_optimizer(session: Session = Depends(get_sync_db_session)) -> MySQLEnhancedOptimizer:
     """获取MySQL增强优化器实例"""
     return MySQLEnhancedOptimizer(session)
+def get_oceanbase_optimizer(session: Session = Depends(get_sync_db_session)) -> OceanBaseConfigOptimizer:
+    """获取OceanBase配置优化器实例"""
+    return OceanBaseConfigOptimizer(session)
+
 
 
 @router.get("/dashboard/{database_id}", response_model=PerformanceDashboardResponse)
@@ -1745,6 +1750,54 @@ async def quick_mysql_optimization(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"MySQL快速优化失败: {str(e)}")
+
+
+# =====================================
+# OceanBase 调优 API 接口
+# =====================================
+
+@router.get("/oceanbase/config-analysis/{database_id}")
+async def analyze_oceanbase_config(
+    database_id: int,
+    optimizer: OceanBaseConfigOptimizer = Depends(get_oceanbase_optimizer)
+):
+    """分析OceanBase配置"""
+    try:
+        analysis = optimizer.analyze_configuration(database_id)
+        return analysis
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OceanBase配置分析失败: {str(e)}")
+
+
+@router.get("/oceanbase/maintenance-strategy/{database_id}")
+async def get_oceanbase_maintenance_strategy(
+    database_id: int,
+    optimizer: OceanBaseConfigOptimizer = Depends(get_oceanbase_optimizer)
+):
+    """获取OceanBase维护策略（合并/统计等）"""
+    try:
+        strategy = optimizer.generate_maintenance_strategy(database_id)
+        return strategy
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"维护策略生成失败: {str(e)}")
+
+
+@router.post("/oceanbase/generate-tuning-script/{database_id}")
+async def generate_oceanbase_tuning_script(
+    database_id: int,
+    analysis_results: Dict[str, Any],
+    optimizer: OceanBaseConfigOptimizer = Depends(get_oceanbase_optimizer)
+):
+    """生成OceanBase性能调优脚本"""
+    try:
+        script = optimizer.generate_performance_tuning_script(analysis_results)
+        return {
+            "tuning_script": script,
+            "generated_at": datetime.now().isoformat(),
+            "description": "OceanBase性能调优脚本，包含内存、计划缓存、合并策略等优化建议"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OceanBase调优脚本生成失败: {str(e)}")
 
 
 def _identify_mysql_bottlenecks(metrics: Dict[str, Any], config_analysis: Dict[str, Any]) -> List[Dict[str, Any]]:

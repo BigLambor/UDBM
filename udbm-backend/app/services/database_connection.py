@@ -18,6 +18,7 @@ class DatabaseType(Enum):
     MYSQL = "mysql"
     MONGODB = "mongodb"
     REDIS = "redis"
+    OCEANBASE = "oceanbase"
 
 
 @dataclass
@@ -284,7 +285,7 @@ class DatabaseConnectionService:
         通用数据库连接测试方法
 
         Args:
-            db_type: 数据库类型 ('postgresql', 'mysql', 'mongodb', 'redis')
+            db_type: 数据库类型 ('postgresql', 'mysql', 'mongodb', 'redis', 'oceanbase')
             host: 主机地址
             port: 端口号
             database: 数据库名
@@ -318,6 +319,16 @@ class DatabaseConnectionService:
             return await DatabaseConnectionService.test_mysql_connection(
                 host=host,
                 port=port,
+                database=database or "",
+                username=username or "",
+                password=password or "",
+                timeout=timeout
+            )
+        elif db_type_enum == DatabaseType.OCEANBASE:
+            # OceanBase MySQL模式连接复用MySQL测试
+            return await DatabaseConnectionService.test_mysql_connection(
+                host=host,
+                port=port or 2881,
                 database=database or "",
                 username=username or "",
                 password=password or "",

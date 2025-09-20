@@ -7,11 +7,16 @@ from sqlalchemy.orm import Session
 from app.models.database import DatabaseInstance, DatabaseType
 from app.services.db_providers.postgres import PostgresProvider
 from app.services.db_providers.mysql import MySQLProvider
+try:
+    from app.services.db_providers.oceanbase import OceanBaseProvider
+except Exception:
+    OceanBaseProvider = None
 
 
 _type_to_provider: Dict[str, Type] = {
     "postgresql": PostgresProvider,
     "mysql": MySQLProvider,
+    "oceanbase": OceanBaseProvider or MySQLProvider,
 }
 
 

@@ -20,6 +20,11 @@ const DATABASE_TYPES = {
     color: '#4479A1',
     name: 'MySQL'
   },
+  oceanbase: {
+    icon: '🌊',
+    color: '#3b82f6',
+    name: 'OceanBase'
+  },
   oracle: {
     icon: '🔶',
     color: '#F80000',
