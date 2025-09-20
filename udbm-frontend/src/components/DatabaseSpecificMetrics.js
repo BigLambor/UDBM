@@ -393,96 +393,43 @@ const MySQLMetrics = ({
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px 0' }}>
-        <Spin size="large" />
-        <div style={{ marginTop: 16 }}>正在加载MySQL性能数据...</div>
-      </div>
-    );
-  }
-
-  // 生成Mock数据的函数
+  // 生成Mock数据的函数（在任何早期return之前定义，供后续逻辑使用）
   const generateMockMySQLData = () => {
     return {
-      performance_score: Math.floor(Math.random() * 30) + 65, // 65-95
+      performance_score: Math.floor(Math.random() * 30) + 65,
       health_status: {
         status: ['excellent', 'good', 'fair'][Math.floor(Math.random() * 3)],
         description: 'MySQL运行状况良好，有少量优化空间'
       },
       bottlenecks: [
-        {
-          type: 'memory_pressure',
-          severity: 'medium',
-          description: 'InnoDB缓冲池命中率为89.2%，建议优化'
-        },
-        {
-          type: 'slow_queries',
-          severity: 'high', 
-          description: '发现23个慢查询，平均执行时间3.2秒'
-        }
+        { type: 'memory_pressure', severity: 'medium', description: 'InnoDB缓冲池命中率为89.2%，建议优化' },
+        { type: 'slow_queries', severity: 'high', description: '发现23个慢查询，平均执行时间3.2秒' }
       ],
       optimization_opportunities: [
-        {
-          type: 'index_optimization',
-          title: '索引优化机会',
-          description: '发现15个慢查询可通过添加索引优化',
-          estimated_benefit: '60-80% 查询性能提升',
-          effort: 'medium'
-        },
-        {
-          type: 'configuration_tuning',
-          title: '配置参数调优',
-          description: '12个配置参数可进一步优化',
-          estimated_benefit: '20-40% 整体性能提升',
-          effort: 'low'
-        }
+        { type: 'index_optimization', title: '索引优化机会', description: '发现15个慢查询可通过添加索引优化', estimated_benefit: '60-80% 查询性能提升', effort: 'medium' },
+        { type: 'configuration_tuning', title: '配置参数调优', description: '12个配置参数可进一步优化', estimated_benefit: '20-40% 整体性能提升', effort: 'low' }
       ],
       key_metrics: {
-        cpu_usage: Math.floor(Math.random() * 40) + 40, // 40-80
-        memory_usage: Math.floor(Math.random() * 30) + 60, // 60-90
-        active_connections: Math.floor(Math.random() * 100) + 25, // 25-125
-        qps: Math.floor(Math.random() * 4000) + 1000 // 1000-5000
+        cpu_usage: Math.floor(Math.random() * 40) + 40,
+        memory_usage: Math.floor(Math.random() * 30) + 60,
+        active_connections: Math.floor(Math.random() * 100) + 25,
+        qps: Math.floor(Math.random() * 4000) + 1000
       }
     };
   };
 
   const generateMockConfigAnalysis = () => {
     return {
-      optimization_score: Math.floor(Math.random() * 25) + 70, // 70-95
+      optimization_score: Math.floor(Math.random() * 25) + 70,
       recommendations: [
-        {
-          parameter: 'innodb_buffer_pool_size',
-          current_value: '2G',
-          recommended_value: '6G',
-          impact: 'high',
-          description: '增加InnoDB缓冲池大小，建议设置为系统内存的70-80%',
-          estimated_improvement: '30-50% 查询性能提升'
-        },
-        {
-          parameter: 'max_connections',
-          current_value: '300',
-          recommended_value: '1000',
-          impact: 'medium',
-          description: '增加最大连接数以支持更高并发负载',
-          estimated_improvement: '提升并发处理能力'
-        },
-        {
-          parameter: 'innodb_io_capacity',
-          current_value: '4000',
-          recommended_value: '6000',
-          impact: 'medium',
-          description: '基于SSD存储，提高IO容量限制以充分利用硬件性能',
-          estimated_improvement: '20-35% 写入性能提升'
-        }
+        { parameter: 'innodb_buffer_pool_size', current_value: '2G', recommended_value: '6G', impact: 'high', description: '增加InnoDB缓冲池大小，建议设置为系统内存的70-80%', estimated_improvement: '30-50% 查询性能提升' },
+        { parameter: 'max_connections', current_value: '300', recommended_value: '1000', impact: 'medium', description: '增加最大连接数以支持更高并发负载', estimated_improvement: '提升并发处理能力' },
+        { parameter: 'innodb_io_capacity', current_value: '4000', recommended_value: '6000', impact: 'medium', description: '基于SSD存储，提高IO容量限制以充分利用硬件性能', estimated_improvement: '20-35% 写入性能提升' }
       ]
     };
   };
 
-  // 如果没有任何MySQL数据，使用Mock数据
-  const effectiveMysqlInsights = mysqlInsights || generateMockMySQLData();
-  const effectiveConfigAnalysis = configAnalysis || generateMockConfigAnalysis();
-  
+
   // 自动加载MySQL数据（如果还没有数据）
   useEffect(() => {
     if (!mysqlInsights && !configAnalysis && !optimizationSummary && database?.id) {
@@ -493,7 +440,7 @@ const MySQLMetrics = ({
           setMysqlInsights(insights);
         } catch (error) {
           console.warn('获取MySQL性能洞察失败，使用Mock数据:', error);
-          setMysqlInsights(effectiveMysqlInsights);
+          setMysqlInsights(generateMockMySQLData());
         }
         
         try {
@@ -501,13 +448,26 @@ const MySQLMetrics = ({
           setConfigAnalysis(config);
         } catch (error) {
           console.warn('获取MySQL配置分析失败，使用Mock数据:', error);
-          setConfigAnalysis(effectiveConfigAnalysis);
+          setConfigAnalysis(generateMockConfigAnalysis());
         }
       };
       
       fetchMySQLData();
     }
   }, [database?.id, mysqlInsights, configAnalysis, optimizationSummary]);
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '50px 0' }}>
+        <Spin size="large" />
+        <div style={{ marginTop: 16 }}>正在加载MySQL性能数据...</div>
+      </div>
+    );
+  }
+
+  // 如果没有任何MySQL数据，使用Mock数据
+  const effectiveMysqlInsights = mysqlInsights || generateMockMySQLData();
+  const effectiveConfigAnalysis = configAnalysis || generateMockConfigAnalysis();
   
   if (!mysqlInsights && !configAnalysis && !optimizationSummary) {
     // 显示加载状态
