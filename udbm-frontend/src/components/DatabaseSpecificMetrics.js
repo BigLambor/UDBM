@@ -1205,6 +1205,118 @@ const OracleMetrics = ({ database, dashboardData }) => {
   );
 };
 
+// OceanBase 特性组件
+const OceanBaseMetrics = ({ database, dashboardData, obConfigAnalysis, obMaintenance, onGenerateScript }) => {
+  const getHealthStatusColor = (value, goodHigh = true) => {
+    if (goodHigh) {
+      return value >= 90 ? '#52c41a' : value >= 80 ? '#faad14' : '#f5222e';
+    }
+    return value <= 10 ? '#52c41a' : value <= 20 ? '#faad14' : '#f5222e';
+  };
+
+  return (
+    <div>
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} lg={8}>
+          <Card>
+            <Statistic
+              title="计划缓存命中率"
+              value={dashboardData?.current_stats?.plan_cache_hit_ratio || 0}
+              suffix="%"
+              valueStyle={{ color: getHealthStatusColor(dashboardData?.current_stats?.plan_cache_hit_ratio || 0) }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} lg={8}>
+          <Card>
+            <Statistic
+              title="RPC 队列长度"
+              value={dashboardData?.current_stats?.rpc_queue_len || 0}
+              valueStyle={{ color: getHealthStatusColor(dashboardData?.current_stats?.rpc_queue_len || 0, false) }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} lg={8}>
+          <Card>
+            <Statistic
+              title="Major 合并进度"
+              value={dashboardData?.current_stats?.major_compaction_progress || 0}
+              suffix="%"
+              valueStyle={{ color: getHealthStatusColor(dashboardData?.current_stats?.major_compaction_progress || 0) }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Tabs defaultActiveKey="ob_metrics">
+        <TabPane tab="OceanBase指标" key="ob_metrics">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} lg={12}>
+              <Card title="资源使用">
+                <Row gutter={[16, 16]}>
+                  <Col xs={12}>
+                    <Statistic title="租户内存(MB)" value={dashboardData?.current_stats?.tenant_mem_used_mb || 0} />
+                  </Col>
+                  <Col xs={12}>
+                    <Statistic title="MemStore(MB)" value={dashboardData?.current_stats?.memstore_used_mb || 0} />
+                  </Col>
+                  <Col xs={12}>
+                    <Statistic title="Tablet数量" value={dashboardData?.current_stats?.tablet_count || 0} />
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+            <Col xs={24} lg={12}>
+              <Card title="合并与日志">
+                <Row gutter={[16, 16]}>
+                  <Col xs={12}>
+                    <Statistic title="合并待处理数" value={dashboardData?.oceanbase_specific_metrics?.minor_compaction_pending || 0} />
+                  </Col>
+                  <Col xs={12}>
+                    <Statistic title="日志盘使用率" value={dashboardData?.oceanbase_specific_metrics?.log_disk_usage_percent || 0} suffix="%" />
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+          </Row>
+        </TabPane>
+        <TabPane tab="配置分析" key="ob_config">
+          <Card title="OceanBase 配置优化建议" extra={<Button type="primary" onClick={onGenerateScript}>生成调优脚本</Button>}>
+            {obConfigAnalysis?.recommendations ? (
+              <Table
+                columns={[
+                  { title: '参数', dataIndex: 'parameter', key: 'parameter' },
+                  { title: '当前值', dataIndex: 'current_value', key: 'current_value' },
+                  { title: '建议值', dataIndex: 'recommended_value', key: 'recommended_value', render: (text) => <Tag color="green">{text}</Tag> },
+                  { title: '影响程度', dataIndex: 'impact', key: 'impact', render: (impact) => <Tag color={impact === 'high' ? 'red' : 'orange'}>{impact}</Tag> },
+                  { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
+                ]}
+                dataSource={obConfigAnalysis.recommendations}
+                pagination={false}
+                size="small"
+                rowKey={(r, i) => `${r.parameter}_${i}`}
+              />
+            ) : (
+              <Empty description="暂无配置优化建议" />
+            )}
+          </Card>
+        </TabPane>
+        <TabPane tab="维护策略" key="ob_maintenance">
+          <Card title="合并与统计维护策略">
+            {obMaintenance ? (
+              <pre style={{ background: '#f5f5f5', padding: 12, borderRadius: 4 }}>
+{JSON.stringify(obMaintenance, null, 2)}
+              </pre>
+            ) : (
+              <Empty description="暂无维护策略数据" />
+            )}
+          </Card>
+        </TabPane>
+      </Tabs>
+    </div>
+  );
+};
+
 // SQL Server 特性组件
 const SQLServerMetrics = ({ database, dashboardData }) => {
   return (
@@ -1301,6 +1413,16 @@ const DatabaseSpecificMetrics = ({
             mysqlInsights={mysqlInsights}
             mysqlConfigAnalysis={mysqlConfigAnalysis}
             mysqlOptimizationSummary={mysqlOptimizationSummary}
+          />
+        );
+      case 'oceanbase':
+        return (
+          <OceanBaseMetrics
+            database={database}
+            dashboardData={dashboardData}
+            obConfigAnalysis={configAnalysis}
+            obMaintenance={vacuumStrategy}
+            onGenerateScript={() => {}}
           />
         );
       case 'oracle':

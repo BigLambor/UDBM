@@ -321,6 +321,19 @@ export const performanceAPI = {
   getMySQLPerformanceInsights: (databaseId) =>
     api.get(`/performance/mysql/performance-insights/${databaseId}`),
 
+  // =====================================
+  // OceanBase 调优 API 接口
+  // =====================================
+
+  analyzeOceanBaseConfig: (databaseId) =>
+    api.get(`/performance/oceanbase/config-analysis/${databaseId}`),
+
+  getOceanBaseMaintenanceStrategy: (databaseId) =>
+    api.get(`/performance/oceanbase/maintenance-strategy/${databaseId}`),
+
+  generateOceanBaseTuningScript: (databaseId, analysisResults) =>
+    api.post(`/performance/oceanbase/generate-tuning-script/${databaseId}`, analysisResults),
+
   // MySQL 实用工具接口
   generateMySQLTuningScript: (databaseId, optimizationAreas) =>
     api.post(`/performance/mysql/generate-tuning-script/${databaseId}`, null, {

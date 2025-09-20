@@ -33,6 +33,12 @@ const DATABASE_TYPES = {
     name: 'MySQL',
     description: '流行的关系型数据库'
   },
+  oceanbase: {
+    icon: '🌊',
+    color: '#3b82f6',
+    name: 'OceanBase',
+    description: '分布式云原生数据库'
+  },
   mongodb: {
     icon: '🍃',
     color: '#47A248',
