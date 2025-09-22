@@ -1,6 +1,7 @@
 """
 数据库实例模型定义
 """
+import os
 from sqlalchemy import String, Boolean, Integer, TIMESTAMP, JSON, func, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List
@@ -13,7 +14,7 @@ class DatabaseType(Base, TimestampMixin):
     数据库类型表
     """
     __tablename__ = "database_types"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(50),  nullable=False)
@@ -30,7 +31,7 @@ class DatabaseInstance(Base, TimestampMixin, UserMixin):
     数据库实例表
     """
     __tablename__ = "database_instances"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
@@ -67,7 +68,7 @@ class DatabaseGroup(Base, TimestampMixin, UserMixin):
     数据库分组表
     """
     __tablename__ = "database_groups"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -82,7 +83,7 @@ class DatabaseGroupMember(Base, TimestampMixin):
     数据库实例分组成员表
     """
     __tablename__ = "database_group_members"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     group_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)

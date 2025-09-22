@@ -42,10 +42,13 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = "udbm_password"
     POSTGRES_DB: str = "udbm_db"
     POSTGRES_PORT: int = 5432
+    USE_SQLITE: bool = True  # 使用SQLite进行开发测试
 
     @property
     def get_database_uri(self) -> str:
-        """获取数据库连接URI，优先使用PostgreSQL"""
+        """获取数据库连接URI，优先使用SQLite进行开发"""
+        if self.USE_SQLITE:
+            return "sqlite+aiosqlite:///./udbm.db"
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     # 数据库连接池配置

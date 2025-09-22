@@ -9,7 +9,7 @@ import {
   ThunderboltOutlined, ReloadOutlined, BulbOutlined, WarningOutlined,
   CheckCircleOutlined, FireOutlined, RocketOutlined, CodeOutlined,
   PartitionOutlined, DashboardOutlined, LineChartOutlined,
-  FileSearchOutlined, SettingOutlined
+  FileSearchOutlined, SettingOutlined, TableOutlined
 } from '@ant-design/icons';
 import { Line, Column, Pie, Gauge, Area } from '@ant-design/charts';
 import api from '../services/api';

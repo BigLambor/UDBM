@@ -1,6 +1,7 @@
 """
 监控指标模型定义
 """
+import os
 from sqlalchemy import String, Boolean, Integer, TIMESTAMP, JSON, Float, func, Text, PrimaryKeyConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import List

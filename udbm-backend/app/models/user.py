@@ -1,6 +1,7 @@
 """
 用户模型定义
 """
+import os
 from sqlalchemy import String, Boolean, Integer, TIMESTAMP, func, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List
@@ -13,7 +14,7 @@ class User(Base, TimestampMixin, UserMixin):
     用户表模型
     """
     __tablename__ = "users"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     username: Mapped[str] = mapped_column(String(50),  nullable=False, index=True)
@@ -42,7 +43,7 @@ class Role(Base, TimestampMixin):
     角色表模型
     """
     __tablename__ = "roles"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(50),  nullable=False)
@@ -56,7 +57,7 @@ class UserRole(Base, TimestampMixin):
     用户角色关联表
     """
     __tablename__ = "user_roles"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
@@ -73,7 +74,7 @@ class Permission(Base, TimestampMixin):
     权限表模型
     """
     __tablename__ = "permissions"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     resource: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -88,7 +89,7 @@ class RolePermission(Base, TimestampMixin):
     角色权限关联表
     """
     __tablename__ = "role_permissions"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     role_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)

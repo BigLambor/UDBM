@@ -1,6 +1,7 @@
 """
 性能调优相关数据模型
 """
+import os
 from sqlalchemy import String, Boolean, Integer, TIMESTAMP, JSON, func, Text, ForeignKey, Float, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Optional
@@ -14,10 +15,10 @@ class SlowQuery(Base, TimestampMixin):
     慢查询记录表
     """
     __tablename__ = "slow_queries"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("udbm.database_instances.id"), nullable=False, index=True)
+    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("database_instances.id"), nullable=False, index=True)
     query_text: Mapped[str] = mapped_column(Text, nullable=False)
     query_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)  # 查询哈希用于去重
     execution_time: Mapped[float] = mapped_column(Float, nullable=False)  # 执行时间(秒)
@@ -42,10 +43,10 @@ class PerformanceMetric(Base, TimestampMixin):
     性能指标表
     """
     __tablename__ = "performance_metrics"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("udbm.database_instances.id"), nullable=False, index=True)
+    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("database_instances.id"), nullable=False, index=True)
     metric_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)  # cpu, memory, io, connections, qps, tps
     metric_name: Mapped[str] = mapped_column(String(100), nullable=False)
     metric_value: Mapped[float] = mapped_column(Float, nullable=False)
@@ -65,10 +66,10 @@ class IndexSuggestion(Base, TimestampMixin):
     索引优化建议表
     """
     __tablename__ = "index_suggestions"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("udbm.database_instances.id"), nullable=False, index=True)
+    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("database_instances.id"), nullable=False, index=True)
     table_name: Mapped[str] = mapped_column(String(100), nullable=False)
     column_names: Mapped[str] = mapped_column(Text, nullable=False)  # JSON数组格式的列名
     index_type: Mapped[str] = mapped_column(String(50), default='btree', nullable=False)  # btree, hash, gin, etc.
@@ -96,10 +97,10 @@ class ExecutionPlan(Base, TimestampMixin):
     执行计划分析表
     """
     __tablename__ = "execution_plans"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("udbm.database_instances.id"), nullable=False, index=True)
+    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("database_instances.id"), nullable=False, index=True)
     query_text: Mapped[str] = mapped_column(Text, nullable=False)
     query_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
 
@@ -128,10 +129,10 @@ class TuningTask(Base, TimestampMixin):
     调优任务表
     """
     __tablename__ = "tuning_tasks"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("udbm.database_instances.id"), nullable=False, index=True)
+    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("database_instances.id"), nullable=False, index=True)
     task_type: Mapped[str] = mapped_column(String(50), nullable=False)  # index_creation, query_rewrite, config_tuning
     task_name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)
@@ -166,10 +167,10 @@ class SystemDiagnosis(Base, TimestampMixin):
     系统诊断报告表
     """
     __tablename__ = "system_diagnoses"
-    __table_args__ = {"schema": "udbm"}
+    __table_args__ = {} if os.getenv("USE_SQLITE", "true").lower() == "true" else {"schema": "udbm"}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("udbm.database_instances.id"), nullable=False, index=True)
+    database_id: Mapped[int] = mapped_column(Integer, ForeignKey("database_instances.id"), nullable=False, index=True)
     diagnosis_type: Mapped[str] = mapped_column(String(50), nullable=False)  # full, quick, specific
     overall_score: Mapped[float] = mapped_column(Float, nullable=False)  # 整体健康评分 0-100
 

@@ -29,13 +29,13 @@ async def list_databases(
     """获取数据库实例列表"""
     try:
         result = await db.execute(
-            text("SELECT * FROM udbm.database_instances ORDER BY created_at DESC LIMIT :limit OFFSET :skip"),
+            text("SELECT * FROM database_instances ORDER BY created_at DESC LIMIT :limit OFFSET :skip"),
             {"limit": limit, "skip": skip}
         )
         databases = result.fetchall()
 
         # 获取数据库类型映射
-        type_result = await db.execute(text("SELECT id, name FROM udbm.database_types"))
+        type_result = await db.execute(text("SELECT id, name FROM database_types"))
         type_mapping = {row.id: row.name for row in type_result.fetchall()}
 
         # 转换为响应格式
@@ -74,7 +74,7 @@ async def create_database(
         # 插入新数据库实例
         result = await db.execute(
             text("""
-            INSERT INTO udbm.database_instances
+            INSERT INTO database_instances
             (name, type_id, host, port, database_name, username, password_encrypted,
              environment, status, health_status)
             VALUES (:name, :type_id, :host, :port, :database_name, :username, :password_encrypted,
@@ -100,7 +100,7 @@ async def create_database(
 
         # 获取数据库类型名称
         type_result = await db.execute(
-            text("SELECT name FROM udbm.database_types WHERE id = :type_id"),
+            text("SELECT name FROM database_types WHERE id = :type_id"),
             {"type_id": db_row.type_id}
         )
         type_row = type_result.fetchone()
@@ -136,7 +136,7 @@ async def get_database(
     """获取数据库实例详情"""
     try:
         result = await db.execute(
-            text("SELECT * FROM udbm.database_instances WHERE id = :id"),
+            text("SELECT * FROM database_instances WHERE id = :id"),
             {"id": database_id}
         )
         db_row = result.fetchone()
@@ -146,7 +146,7 @@ async def get_database(
 
         # 获取数据库类型名称
         type_result = await db.execute(
-            text("SELECT name FROM udbm.database_types WHERE id = :type_id"),
+            text("SELECT name FROM database_types WHERE id = :type_id"),
             {"type_id": db_row.type_id}
         )
         type_row = type_result.fetchone()
@@ -230,7 +230,7 @@ async def update_database(
 
         # 获取数据库类型名称
         type_result = await db.execute(
-            text("SELECT name FROM udbm.database_types WHERE id = :type_id"),
+            text("SELECT name FROM database_types WHERE id = :type_id"),
             {"type_id": db_row.type_id}
         )
         type_row = type_result.fetchone()
@@ -268,7 +268,7 @@ async def delete_database(
     """删除数据库实例"""
     try:
         result = await db.execute(
-            text("DELETE FROM udbm.database_instances WHERE id = :id RETURNING id"),
+            text("DELETE FROM database_instances WHERE id = :id RETURNING id"),
             {"id": database_id}
         )
 
@@ -294,7 +294,7 @@ async def test_database_connection(
     try:
         # 获取数据库实例信息
         result = await db.execute(
-            text("SELECT * FROM udbm.database_instances WHERE id = :id"),
+            text("SELECT * FROM database_instances WHERE id = :id"),
             {"id": database_id}
         )
         db_instance = result.fetchone()
@@ -304,7 +304,7 @@ async def test_database_connection(
 
         # 获取数据库类型信息
         type_result = await db.execute(
-            text("SELECT * FROM udbm.database_types WHERE id = :type_id"),
+            text("SELECT * FROM database_types WHERE id = :type_id"),
             {"type_id": db_instance.type_id}
         )
         db_type = type_result.fetchone()

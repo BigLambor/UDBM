@@ -39,7 +39,7 @@ class DatabaseInstanceInitializer:
         """获取PostgreSQL数据库类型的ID"""
         try:
             result = await session.execute(
-                text("SELECT id FROM udbm.database_types WHERE name = 'postgresql' AND is_active = true")
+                text("SELECT id FROM database_types WHERE name = 'postgresql' AND is_active = true")
             )
             row = result.fetchone()
             return row[0] if row else None
@@ -51,7 +51,7 @@ class DatabaseInstanceInitializer:
         """获取MySQL数据库类型的ID"""
         try:
             result = await session.execute(
-                text("SELECT id FROM udbm.database_types WHERE name = 'mysql' AND is_active = true")
+                text("SELECT id FROM database_types WHERE name = 'mysql' AND is_active = true")
             )
             row = result.fetchone()
             return row[0] if row else None
@@ -63,7 +63,7 @@ class DatabaseInstanceInitializer:
         """获取OceanBase数据库类型的ID"""
         try:
             result = await session.execute(
-                text("SELECT id FROM udbm.database_types WHERE name = 'oceanbase' AND is_active = true")
+                text("SELECT id FROM database_types WHERE name = 'oceanbase' AND is_active = true")
             )
             row = result.fetchone()
             return row[0] if row else None
@@ -76,7 +76,7 @@ class DatabaseInstanceInitializer:
         try:
             result = await session.execute(
                 text("""
-                    SELECT COUNT(*) FROM udbm.database_instances
+                    SELECT COUNT(*) FROM database_instances
                     WHERE type_id = :type_id AND host = 'localhost'
                 """),
                 {"type_id": type_id}
@@ -93,7 +93,7 @@ class DatabaseInstanceInitializer:
             # 插入PostgreSQL实例
             await session.execute(
                 text("""
-                    INSERT INTO udbm.database_instances
+                    INSERT INTO database_instances
                     (name, type_id, host, port, database_name, username, password_encrypted,
                      environment, status, health_status, ssl_enabled, tags)
                     VALUES
@@ -128,7 +128,7 @@ class DatabaseInstanceInitializer:
             await session.execute(
                 text(
                     """
-                    INSERT INTO udbm.database_instances
+                    INSERT INTO database_instances
                     (name, type_id, host, port, database_name, username, password_encrypted,
                      environment, status, health_status, ssl_enabled, tags)
                     VALUES
@@ -163,7 +163,7 @@ class DatabaseInstanceInitializer:
             await session.execute(
                 text(
                     """
-                    INSERT INTO udbm.database_instances
+                    INSERT INTO database_instances
                     (name, type_id, host, port, database_name, username, password_encrypted,
                      environment, status, health_status, ssl_enabled, tags)
                     VALUES
@@ -251,7 +251,7 @@ async def initialize_database_instances():
                 result = await session.execute(
                     text(
                         """
-                        SELECT COUNT(*) FROM udbm.database_instances
+                        SELECT COUNT(*) FROM database_instances
                         WHERE type_id = :type_id AND host = 'localhost' AND port = 3306
                         """
                     ),
@@ -274,7 +274,7 @@ async def initialize_database_instances():
                 result = await session.execute(
                     text(
                         """
-                        SELECT COUNT(*) FROM udbm.database_instances
+                        SELECT COUNT(*) FROM database_instances
                         WHERE type_id = :type_id AND host = 'localhost' AND port = 2881
                         """
                     ),

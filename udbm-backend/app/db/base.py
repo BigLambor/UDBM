@@ -26,5 +26,5 @@ class TimestampMixin:
 
 class UserMixin:
     """用户相关混入类"""
-    created_by: Mapped[int] = mapped_column(Integer, ForeignKey("udbm.users.id"), nullable=True)
-    updated_by: Mapped[int] = mapped_column(Integer, ForeignKey("udbm.users.id"), nullable=True)
+    created_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    updated_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
