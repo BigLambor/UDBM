@@ -49,8 +49,8 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
 
   const loadSqlAnalysis = async () => {
     try {
-      const response = await api.get(`/performance-tuning/oceanbase/sql-analysis/${databaseId}`);
-      setSqlAnalysis(response.data);
+      const response = await api.get(`/performance/oceanbase/sql-analysis/${databaseId}`);
+      setSqlAnalysis(response);
     } catch (err) {
       console.error('Failed to load SQL analysis:', err);
     }
@@ -58,7 +58,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
 
   const loadSqlTrends = async () => {
     try {
-      const response = await api.get(`/performance-tuning/oceanbase/sql-trends/${databaseId}`);
+      const response = await api.get(`/performance/oceanbase/sql-trends/${databaseId}`);
       setSqlTrends(response.data);
     } catch (err) {
       console.error('Failed to load SQL trends:', err);
@@ -67,7 +67,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
 
   const loadPartitionAnalysis = async () => {
     try {
-      const response = await api.get(`/performance-tuning/oceanbase/partition-analysis/${databaseId}`);
+      const response = await api.get(`/performance/oceanbase/partition-analysis/${databaseId}`);
       setPartitionAnalysis(response.data);
     } catch (err) {
       console.error('Failed to load partition analysis:', err);
@@ -76,7 +76,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
 
   const loadHotspotAnalysis = async () => {
     try {
-      const response = await api.get(`/performance-tuning/oceanbase/partition-hotspots/${databaseId}`);
+      const response = await api.get(`/performance/oceanbase/partition-hotspots/${databaseId}`);
       setHotspotAnalysis(response.data);
     } catch (err) {
       console.error('Failed to load hotspot analysis:', err);
@@ -87,7 +87,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
     if (!sqlText.trim()) return;
     
     try {
-      const response = await api.post('/performance-tuning/oceanbase/execution-plan', {
+      const response = await api.post('/performance/oceanbase/execution-plan', {
         sql_text: sqlText
       });
       setExecutionPlan(response.data);
@@ -98,7 +98,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
 
   const analyzePartitionPruning = async () => {
     try {
-      const response = await api.post('/performance-tuning/oceanbase/partition-pruning', {
+      const response = await api.post('/performance/oceanbase/partition-pruning', {
         database_id: databaseId,
         sql_queries: testQueries
       });
@@ -117,7 +117,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
         analysisData = partitionAnalysis;
       }
 
-      const response = await api.post(`/performance-tuning/oceanbase/generate-${scriptType}-optimization-script`, {
+      const response = await api.post(`/performance/oceanbase/generate-${scriptType}-optimization-script`, {
         analysis_results: analysisData
       });
       setGeneratedScript(response.data.script);
