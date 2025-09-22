@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.services.performance_tuning.tuning_executor import TuningExecutor
 from app.services.performance_tuning.oceanbase_config_optimizer import OceanBaseConfigOptimizer
+from app.services.performance_tuning.oceanbase_sql_analyzer import OceanBaseSQLAnalyzer
+from app.services.performance_tuning.oceanbase_partition_analyzer import OceanBasePartitionAnalyzer
 
 
 class _OBMonitor:
@@ -246,46 +248,84 @@ class _OBMonitor:
 class _OBSlowQueries:
     def __init__(self, session: Session):
         self._session = session
+        self._sql_analyzer = OceanBaseSQLAnalyzer(session)
 
     def list(self, database_id: int, limit: int, offset: int):
-        # 首版：返回空列表（OceanBase慢SQL建议通过 GV$OB_SQL_AUDIT 在线查询）
-        return []
+        # 使用SQL分析器获取慢查询
+        analysis = self._sql_analyzer.analyze_slow_queries(database_id, threshold_seconds=1.0)
+        return analysis.get("top_slow_queries", [])[offset:offset + limit]
 
     def capture(self, database_id: int, threshold_seconds: float = 1.0) -> List[Dict[str, Any]]:
-        # 预留：调用 GV$OB_SQL_AUDIT 捕获
-        return []
+        # 使用SQL分析器捕获慢查询
+        analysis = self._sql_analyzer.analyze_slow_queries(database_id, threshold_seconds)
+        return analysis.get("top_slow_queries", [])
 
     def save(self, slow_query_data: Dict[str, Any]):
         # 预留：将外部采集写入平台库
         return slow_query_data
 
     def analyze_text(self, query_text: str, execution_time: float, rows_examined: int) -> Dict[str, Any]:
-        suggestions: List[Dict[str, Any]] = []
-        q = query_text.upper()
-        if "JOIN" in q:
-            suggestions.append({"type": "join_index", "description": "为 JOIN 列添加索引", "impact": "high"})
-        if "LIKE '%" in query_text or "LIKE \"%" in query_text:
-            suggestions.append({"type": "range_predicate", "description": "考虑前缀、分词或倒排索引", "impact": "medium"})
+        # 使用SQL分析器进行文本分析
+        plan_analysis = self._sql_analyzer.analyze_sql_execution_plan(query_text)
+        
+        # 计算复杂度评分
+        complexity_score = min(100, max(0, 100 - (execution_time * 10)))
+        efficiency_score = min(100, max(0, 100 - (rows_examined / 1000)))
+        
         return {
-            "query_analysis": {"complexity_score": 55, "efficiency_score": 62, "performance_rating": "fair"},
-            "suggestions": suggestions[:5],
-            "priority_score": 70,
-            "estimated_improvement": "40-70%",
+            "query_analysis": {
+                "complexity_score": complexity_score,
+                "efficiency_score": efficiency_score,
+                "performance_rating": "excellent" if complexity_score > 80 else "good" if complexity_score > 60 else "fair"
+            },
+            "suggestions": plan_analysis.get("optimization_suggestions", []),
+            "priority_score": (complexity_score + efficiency_score) / 2,
+            "estimated_improvement": "20-60%",
+            "execution_plan": plan_analysis.get("execution_plan", []),
+            "index_usage": plan_analysis.get("index_usage", {})
         }
 
     def patterns(self, database_id: int, days: int = 7) -> Dict[str, Any]:
-        return {"total_slow_queries": 0, "avg_execution_time": 0.0, "most_common_patterns": [], "top_tables": []}
+        # 使用SQL分析器获取模式分析
+        trends = self._sql_analyzer.analyze_sql_performance_trends(database_id, days)
+        return {
+            "total_slow_queries": sum(day["slow_queries"] for day in trends.get("daily_stats", [])),
+            "avg_execution_time": sum(day["avg_elapsed_time"] for day in trends.get("daily_stats", [])) / max(1, len(trends.get("daily_stats", []))),
+            "most_common_patterns": trends.get("performance_patterns", {}).get("common_operations", {}),
+            "top_tables": list(trends.get("performance_patterns", {}).get("table_access_patterns", {}).keys())[:10]
+        }
 
     def statistics(self, database_id: int, days: int = 7) -> Dict[str, Any]:
+        # 使用SQL分析器获取统计信息
+        trends = self._sql_analyzer.analyze_sql_performance_trends(database_id, days)
+        daily_stats = trends.get("daily_stats", [])
+        
+        if not daily_stats:
+            return {
+                "period": f"{days}天",
+                "total_queries": 0,
+                "slow_queries": 0,
+                "slow_query_percentage": 0.0,
+                "avg_execution_time": 0.0,
+                "max_execution_time": 0.0,
+                "queries_per_second": 0.0,
+                "trend": "stable",
+            }
+        
+        total_queries = sum(day["total_queries"] for day in daily_stats)
+        total_slow_queries = sum(day["slow_queries"] for day in daily_stats)
+        avg_execution_time = sum(day["avg_elapsed_time"] for day in daily_stats) / len(daily_stats)
+        max_execution_time = max(day["max_elapsed_time"] for day in daily_stats)
+        
         return {
             "period": f"{days}天",
-            "total_queries": 0,
-            "slow_queries": 0,
-            "slow_query_percentage": 0.0,
-            "avg_execution_time": 0.0,
-            "max_execution_time": 0.0,
-            "queries_per_second": 0.0,
-            "trend": "stable",
+            "total_queries": total_queries,
+            "slow_queries": total_slow_queries,
+            "slow_query_percentage": (total_slow_queries / total_queries * 100) if total_queries > 0 else 0.0,
+            "avg_execution_time": round(avg_execution_time, 3),
+            "max_execution_time": round(max_execution_time, 3),
+            "queries_per_second": round(total_queries / (days * 24 * 3600), 2),
+            "trend": "improving" if daily_stats[-1]["avg_elapsed_time"] < daily_stats[0]["avg_elapsed_time"] else "stable",
         }
 
 
@@ -309,6 +349,40 @@ class _OBConfig:
         return self._o.generate_performance_tuning_script(analysis_results)
 
 
+class _OBSQLAnalyzer:
+    def __init__(self, session: Session):
+        self._analyzer = OceanBaseSQLAnalyzer(session)
+
+    def analyze_slow_queries(self, database_id: int, threshold_seconds: float = 1.0, hours: int = 24) -> Dict[str, Any]:
+        return self._analyzer.analyze_slow_queries(database_id, threshold_seconds, hours)
+
+    def analyze_performance_trends(self, database_id: int, days: int = 7) -> Dict[str, Any]:
+        return self._analyzer.analyze_sql_performance_trends(database_id, days)
+
+    def analyze_execution_plan(self, sql_text: str) -> Dict[str, Any]:
+        return self._analyzer.analyze_sql_execution_plan(sql_text)
+
+    def generate_optimization_script(self, analysis_results: Dict[str, Any]) -> str:
+        return self._analyzer.generate_sql_optimization_script(analysis_results)
+
+
+class _OBPartitionAnalyzer:
+    def __init__(self, session: Session):
+        self._analyzer = OceanBasePartitionAnalyzer(session)
+
+    def analyze_partition_tables(self, database_id: int) -> Dict[str, Any]:
+        return self._analyzer.analyze_partition_tables(database_id)
+
+    def analyze_hotspots(self, database_id: int, table_name: Optional[str] = None) -> Dict[str, Any]:
+        return self._analyzer.analyze_partition_hotspots(database_id, table_name)
+
+    def analyze_partition_pruning(self, database_id: int, sql_queries: List[str]) -> Dict[str, Any]:
+        return self._analyzer.analyze_partition_pruning(database_id, sql_queries)
+
+    def generate_optimization_script(self, analysis_results: Dict[str, Any]) -> str:
+        return self._analyzer.generate_partition_optimization_script(analysis_results)
+
+
 class _OBExecutor:
     def __init__(self, session: Session):
         self._e = TuningExecutor(session)
@@ -326,4 +400,6 @@ class OceanBaseProvider:
         self.slow_queries = _OBSlowQueries(session)
         self.optimizer = _OBConfig(session)
         self.executor = _OBExecutor(session)
+        self.sql_analyzer = _OBSQLAnalyzer(session)
+        self.partition_analyzer = _OBPartitionAnalyzer(session)
 

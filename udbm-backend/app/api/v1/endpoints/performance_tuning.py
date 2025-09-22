@@ -1640,6 +1640,149 @@ async def comprehensive_mysql_analysis(
         raise HTTPException(status_code=500, detail=f"MySQL综合分析失败: {str(e)}")
 
 
+# OceanBase 性能调优相关端点
+
+@router.get("/oceanbase/sql-analysis/{database_id}")
+async def analyze_oceanbase_sql_performance(
+    database_id: int,
+    threshold_seconds: float = Query(1.0, description="慢查询阈值(秒)"),
+    hours: int = Query(24, description="分析时间范围(小时)"),
+    db: Session = Depends(get_db)
+):
+    """OceanBase SQL性能分析"""
+    try:
+        from app.services.db_providers.oceanbase import OceanBaseProvider
+        provider = OceanBaseProvider(db)
+        
+        analysis = provider.sql_analyzer.analyze_slow_queries(database_id, threshold_seconds, hours)
+        return analysis
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OceanBase SQL分析失败: {str(e)}")
+
+
+@router.get("/oceanbase/sql-trends/{database_id}")
+async def get_oceanbase_sql_trends(
+    database_id: int,
+    days: int = Query(7, description="分析天数"),
+    db: Session = Depends(get_db)
+):
+    """OceanBase SQL性能趋势分析"""
+    try:
+        from app.services.db_providers.oceanbase import OceanBaseProvider
+        provider = OceanBaseProvider(db)
+        
+        trends = provider.sql_analyzer.analyze_performance_trends(database_id, days)
+        return trends
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OceanBase SQL趋势分析失败: {str(e)}")
+
+
+@router.post("/oceanbase/execution-plan")
+async def analyze_oceanbase_execution_plan(
+    sql_text: str = Body(..., description="SQL语句"),
+    db: Session = Depends(get_db)
+):
+    """OceanBase执行计划分析"""
+    try:
+        from app.services.db_providers.oceanbase import OceanBaseProvider
+        provider = OceanBaseProvider(db)
+        
+        plan_analysis = provider.sql_analyzer.analyze_execution_plan(sql_text)
+        return plan_analysis
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OceanBase执行计划分析失败: {str(e)}")
+
+
+@router.get("/oceanbase/partition-analysis/{database_id}")
+async def analyze_oceanbase_partitions(
+    database_id: int,
+    db: Session = Depends(get_db)
+):
+    """OceanBase分区表分析"""
+    try:
+        from app.services.db_providers.oceanbase import OceanBaseProvider
+        provider = OceanBaseProvider(db)
+        
+        analysis = provider.partition_analyzer.analyze_partition_tables(database_id)
+        return analysis
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OceanBase分区分析失败: {str(e)}")
+
+
+@router.get("/oceanbase/partition-hotspots/{database_id}")
+async def analyze_oceanbase_partition_hotspots(
+    database_id: int,
+    table_name: Optional[str] = Query(None, description="指定表名"),
+    db: Session = Depends(get_db)
+):
+    """OceanBase分区热点分析"""
+    try:
+        from app.services.db_providers.oceanbase import OceanBaseProvider
+        provider = OceanBaseProvider(db)
+        
+        hotspots = provider.partition_analyzer.analyze_hotspots(database_id, table_name)
+        return hotspots
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OceanBase分区热点分析失败: {str(e)}")
+
+
+@router.post("/oceanbase/partition-pruning")
+async def analyze_oceanbase_partition_pruning(
+    database_id: int = Body(..., description="数据库ID"),
+    sql_queries: List[str] = Body(..., description="SQL查询列表"),
+    db: Session = Depends(get_db)
+):
+    """OceanBase分区剪裁分析"""
+    try:
+        from app.services.db_providers.oceanbase import OceanBaseProvider
+        provider = OceanBaseProvider(db)
+        
+        pruning_analysis = provider.partition_analyzer.analyze_partition_pruning(database_id, sql_queries)
+        return pruning_analysis
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OceanBase分区剪裁分析失败: {str(e)}")
+
+
+@router.post("/oceanbase/generate-sql-optimization-script")
+async def generate_oceanbase_sql_optimization_script(
+    analysis_results: Dict[str, Any] = Body(..., description="分析结果"),
+    db: Session = Depends(get_db)
+):
+    """生成OceanBase SQL优化脚本"""
+    try:
+        from app.services.db_providers.oceanbase import OceanBaseProvider
+        provider = OceanBaseProvider(db)
+        
+        script = provider.sql_analyzer.generate_optimization_script(analysis_results)
+        return {"script": script, "generated_at": datetime.now().isoformat()}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"生成OceanBase SQL优化脚本失败: {str(e)}")
+
+
+@router.post("/oceanbase/generate-partition-optimization-script")
+async def generate_oceanbase_partition_optimization_script(
+    analysis_results: Dict[str, Any] = Body(..., description="分析结果"),
+    db: Session = Depends(get_db)
+):
+    """生成OceanBase分区优化脚本"""
+    try:
+        from app.services.db_providers.oceanbase import OceanBaseProvider
+        provider = OceanBaseProvider(db)
+        
+        script = provider.partition_analyzer.generate_optimization_script(analysis_results)
+        return {"script": script, "generated_at": datetime.now().isoformat()}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"生成OceanBase分区优化脚本失败: {str(e)}")
+
+
 @router.get("/mysql/performance-insights/{database_id}")
 async def get_mysql_performance_insights(
     database_id: int,
