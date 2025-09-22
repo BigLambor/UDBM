@@ -16,6 +16,7 @@ import {
 import { Line, Bar, Pie } from '@ant-design/charts';
 
 import { performanceAPI } from '../services/api';
+import OceanBaseAnalysisEnhanced from './OceanBaseAnalysisEnhanced';
 
 const { TabPane } = Tabs;
 const { Option } = AntSelect;
@@ -1377,12 +1378,9 @@ const DatabaseSpecificMetrics = ({
         );
       case 'oceanbase':
         return (
-          <OceanBaseMetrics
-            database={database}
-            dashboardData={dashboardData}
-            obConfigAnalysis={configAnalysis}
-            obMaintenance={vacuumStrategy}
-            onGenerateScript={() => {}}
+          <OceanBaseAnalysisEnhanced
+            databaseId={database.id}
+            embedded={true}
           />
         );
       case 'oracle':

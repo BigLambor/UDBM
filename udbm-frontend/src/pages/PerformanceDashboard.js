@@ -19,6 +19,7 @@ import DatabaseSelector from '../components/DatabaseSelector';
 import DatabaseSpecificMetrics from '../components/DatabaseSpecificMetrics';
 import PerformanceMetricCard from '../components/PerformanceMetricCard';
 import DataSourceIndicator from '../components/DataSourceIndicator';
+import OceanBaseAnalysisEnhanced from '../components/OceanBaseAnalysisEnhanced';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
