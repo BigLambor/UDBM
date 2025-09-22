@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../services/api';
+import api from '../services/api';
 
 const OceanBaseAnalysisSimple = ({ databaseId }) => {
   const [activeTab, setActiveTab] = useState('sql-analysis');
@@ -59,7 +59,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
   const loadSqlTrends = async () => {
     try {
       const response = await api.get(`/performance/oceanbase/sql-trends/${databaseId}`);
-      setSqlTrends(response.data);
+      setSqlTrends(response);
     } catch (err) {
       console.error('Failed to load SQL trends:', err);
     }
@@ -68,7 +68,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
   const loadPartitionAnalysis = async () => {
     try {
       const response = await api.get(`/performance/oceanbase/partition-analysis/${databaseId}`);
-      setPartitionAnalysis(response.data);
+      setPartitionAnalysis(response);
     } catch (err) {
       console.error('Failed to load partition analysis:', err);
     }
@@ -77,7 +77,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
   const loadHotspotAnalysis = async () => {
     try {
       const response = await api.get(`/performance/oceanbase/partition-hotspots/${databaseId}`);
-      setHotspotAnalysis(response.data);
+      setHotspotAnalysis(response);
     } catch (err) {
       console.error('Failed to load hotspot analysis:', err);
     }
@@ -90,7 +90,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
       const response = await api.post('/performance/oceanbase/execution-plan', {
         sql_text: sqlText
       });
-      setExecutionPlan(response.data);
+      setExecutionPlan(response);
     } catch (err) {
       console.error('Failed to analyze execution plan:', err);
     }
@@ -102,7 +102,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
         database_id: databaseId,
         sql_queries: testQueries
       });
-      setPruningAnalysis(response.data);
+      setPruningAnalysis(response);
     } catch (err) {
       console.error('Failed to analyze partition pruning:', err);
     }
@@ -120,7 +120,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
       const response = await api.post(`/performance/oceanbase/generate-${scriptType}-optimization-script`, {
         analysis_results: analysisData
       });
-      setGeneratedScript(response.data.script);
+      setGeneratedScript(response.script);
     } catch (err) {
       console.error('Failed to generate script:', err);
     }
