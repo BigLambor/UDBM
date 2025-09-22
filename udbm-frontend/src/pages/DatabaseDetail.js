@@ -98,7 +98,9 @@ const DatabaseDetail = () => {
       2: 'MySQL',
       3: 'MongoDB',
       4: 'Redis',
-      5: 'SQLite'
+      5: 'OceanBase',
+      6: 'Oracle',
+      7: 'SQL Server'
     };
     return types[typeId] || `类型${typeId}`;
   };
@@ -206,7 +208,9 @@ const DatabaseDetail = () => {
                     {database.type_id === 1 ? 'postgresql://' :
                      database.type_id === 2 ? 'mysql://' :
                      database.type_id === 3 ? 'mongodb://' :
-                     database.type_id === 4 ? 'redis://' : ''}
+                     database.type_id === 4 ? 'redis://' :
+                     database.type_id === 5 ? 'mysql://' :  // OceanBase使用MySQL协议
+                     database.type_id === 6 ? 'oracle://' : ''}
                     {database.username ? `${database.username}@` : ''}
                     {database.host}:{database.port}
                     {database.database_name ? `/${database.database_name}` : ''}
@@ -215,7 +219,9 @@ const DatabaseDetail = () => {
                 <Descriptions.Item label="JDBC URL">
                   <code>
                     {database.type_id === 1 ? 'jdbc:postgresql://' :
-                     database.type_id === 2 ? 'jdbc:mysql://' : 'jdbc:'}
+                     database.type_id === 2 ? 'jdbc:mysql://' :
+                     database.type_id === 5 ? 'jdbc:mysql://' :  // OceanBase使用MySQL协议
+                     database.type_id === 6 ? 'jdbc:oracle:thin:@' : 'jdbc:'}
                     {database.host}:{database.port}
                     {database.database_name ? `/${database.database_name}` : ''}
                   </code>

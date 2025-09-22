@@ -158,16 +158,37 @@ const DatabaseList = () => {
     );
   };
 
-  // 获取数据库类型名称
-  const getDatabaseTypeName = (typeId) => {
-    const types = {
-      1: 'PostgreSQL',
-      2: 'MySQL',
-      3: 'MongoDB',
-      4: 'Redis',
-      5: 'SQLite'
-    };
-    return types[typeId] || `类型${typeId}`;
+  // 获取数据库类型名称 - 支持type字段和type_id字段
+  const getDatabaseTypeName = (record) => {
+    // 优先使用API返回的type字段
+    if (record.type) {
+      const typeMap = {
+        'postgresql': 'PostgreSQL',
+        'mysql': 'MySQL',
+        'mongodb': 'MongoDB',
+        'redis': 'Redis',
+        'oceanbase': 'OceanBase',
+        'oracle': 'Oracle',
+        'sqlserver': 'SQL Server'
+      };
+      return typeMap[record.type] || record.type;
+    }
+    
+    // 向后兼容：使用type_id字段
+    if (record.type_id) {
+      const types = {
+        1: 'PostgreSQL',
+        2: 'MySQL',
+        3: 'MongoDB',
+        4: 'Redis',
+        5: 'OceanBase',
+        6: 'Oracle',
+        7: 'SQL Server'
+      };
+      return types[record.type_id] || `类型${record.type_id}`;
+    }
+    
+    return '未知类型';
   };
 
   // 表格列定义
@@ -185,9 +206,9 @@ const DatabaseList = () => {
     },
     {
       title: '类型',
-      dataIndex: 'type_id',
-      key: 'type_id',
-      render: (typeId) => getDatabaseTypeName(typeId)
+      dataIndex: 'type',
+      key: 'type',
+      render: (_, record) => getDatabaseTypeName(record)
     },
     {
       title: '主机:端口',
@@ -329,7 +350,7 @@ const DatabaseList = () => {
               description={
                 <div>
                   <div style={{ marginBottom: '4px' }}>
-                    <strong>类型:</strong> {getDatabaseTypeName(database.type_id)} |
+                    <strong>类型:</strong> {getDatabaseTypeName(database)} |
                     <strong>环境:</strong> {database.environment}
                   </div>
                   <div style={{ color: '#666', fontSize: '12px' }}>
@@ -431,6 +452,7 @@ const DatabaseList = () => {
               <Option value={2}>MySQL</Option>
               <Option value={3}>MongoDB</Option>
               <Option value={4}>Redis</Option>
+              <Option value={5}>OceanBase</Option>
             </Select>
           </Form.Item>
 

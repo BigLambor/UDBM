@@ -20,6 +20,7 @@ const DATABASE_TYPE_CONFIG = {
   mysql: { icon: '🐬', color: '#4479A1', name: 'MySQL' },
   mongodb: { icon: '🍃', color: '#47A248', name: 'MongoDB' },
   redis: { icon: '⚡', color: '#DC382D', name: 'Redis' },
+  oceanbase: { icon: '🌊', color: '#1890ff', name: 'OceanBase' },
   oracle: { icon: '🔶', color: '#F80000', name: 'Oracle' },
   sqlserver: { icon: '🏢', color: '#CC2927', name: 'SQL Server' }
 };
@@ -39,7 +40,26 @@ const DatabaseInstanceCard = ({
   onTools,
   showActions = true
 }) => {
-  const typeConfig = DATABASE_TYPE_CONFIG[database.type] || DATABASE_TYPE_CONFIG.postgresql;
+  // 支持type字段和type_id字段的数据库类型识别
+  const getDatabaseType = (db) => {
+    if (db.type) {
+      return db.type.toLowerCase();
+    }
+    // 向后兼容type_id
+    const typeIdMap = {
+      1: 'postgresql',
+      2: 'mysql',
+      3: 'mongodb',
+      4: 'redis',
+      5: 'oceanbase',
+      6: 'oracle',
+      7: 'sqlserver'
+    };
+    return typeIdMap[db.type_id] || 'postgresql';
+  };
+  
+  const dbType = getDatabaseType(database);
+  const typeConfig = DATABASE_TYPE_CONFIG[dbType] || DATABASE_TYPE_CONFIG.postgresql;
   const envConfig = ENVIRONMENT_CONFIG[database.environment] || { 
     color: '#666', 
     icon: '⚪', 

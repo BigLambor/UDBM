@@ -130,6 +130,7 @@ const Dashboard = () => {
     const typeMap = {
       postgresql: { total: 0, healthy: 0, warning: 0, critical: 0 },
       mysql: { total: 0, healthy: 0, warning: 0, critical: 0 },
+      oceanbase: { total: 0, healthy: 0, warning: 0, critical: 0 },
       mongodb: { total: 0, healthy: 0, warning: 0, critical: 0 },
       redis: { total: 0, healthy: 0, warning: 0, critical: 0 },
       oracle: { total: 0, healthy: 0, warning: 0, critical: 0 },
@@ -163,8 +164,9 @@ const Dashboard = () => {
       2: 'MySQL',
       3: 'MongoDB',
       4: 'Redis',
-      5: 'Oracle',
-      6: 'SQL Server'
+      5: 'OceanBase',
+      6: 'Oracle',
+      7: 'SQL Server'
     };
     return types[typeId] || 'Unknown';
   };
