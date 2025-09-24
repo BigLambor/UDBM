@@ -19,25 +19,66 @@ const { Title, Text, Paragraph } = Typography;
 
 const LockAnalysisDashboardAntd = ({ databaseId }) => {
   const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('1');
   const [selectedOptimization, setSelectedOptimization] = useState(null);
+  const [databaseInfo, setDatabaseInfo] = useState(null);
+  const [noDataReason, setNoDataReason] = useState(null);
 
   useEffect(() => {
-    fetchDashboardData();
-    const interval = setInterval(fetchDashboardData, 30000); // 30秒刷新一次
-    return () => clearInterval(interval);
+    if (databaseId) {
+      fetchDatabaseInfo();
+      fetchDashboardData();
+      const interval = setInterval(fetchDashboardData, 30000); // 30秒刷新一次
+      return () => clearInterval(interval);
+    }
   }, [databaseId]);
 
+  const fetchDatabaseInfo = async () => {
+    try {
+      const response = await performanceAPI.getDatabaseById(databaseId);
+      setDatabaseInfo(response);
+    } catch (err) {
+      console.error('获取数据库信息失败:', err);
+    }
+  };
+
   const fetchDashboardData = async () => {
+    if (!databaseId) return;
+    
     try {
       setLoading(true);
-      const response = await performanceAPI.getLockDashboard(databaseId);
-      setDashboardData(response);
       setError(null);
+      setNoDataReason(null);
+      
+      const response = await performanceAPI.getLockDashboard(databaseId);
+      
+      if (response && Object.keys(response).length > 0) {
+        setDashboardData(response);
+      } else {
+        setDashboardData(null);
+        setNoDataReason('no_data');
+      }
     } catch (err) {
-      setError('获取锁分析数据失败: ' + (err.response?.data?.detail || err.message));
+      console.error('获取锁分析数据失败:', err);
+      
+      // 根据错误类型设置不同的提示
+      if (err.response?.status === 404) {
+        setNoDataReason('not_supported');
+        setError('当前数据库类型暂不支持锁分析功能');
+      } else if (err.response?.status === 503) {
+        setNoDataReason('unavailable');
+        setError('数据库连接不可用，请检查数据库状态');
+      } else if (err.response?.data?.detail?.includes('permission')) {
+        setNoDataReason('permission');
+        setError('没有权限访问锁分析数据，请联系管理员');
+      } else {
+        setNoDataReason('error');
+        setError('获取锁分析数据失败: ' + (err.response?.data?.detail || err.message));
+      }
+      
+      setDashboardData(null);
     } finally {
       setLoading(false);
     }
@@ -71,40 +112,86 @@ const LockAnalysisDashboardAntd = ({ databaseId }) => {
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
+  // 根据数据库类型返回不同的提示信息
+  const getNoDataMessage = () => {
+    if (!databaseInfo) {
+      return {
+        title: '暂无锁分析数据',
+        description: '请确保已选择数据库并且数据库连接正常',
+        showAction: true
+      };
+    }
+
+    const dbType = databaseInfo.type?.toLowerCase();
+    
+    switch (noDataReason) {
+      case 'not_supported':
+        return {
+          title: `${dbType?.toUpperCase() || '该'} 数据库暂不支持锁分析`,
+          description: `锁分析功能目前支持 PostgreSQL、MySQL 和 OceanBase 数据库`,
+          showAction: false
+        };
+      case 'unavailable':
+        return {
+          title: '数据库连接不可用',
+          description: '请检查数据库连接状态，确保数据库正在运行',
+          showAction: true
+        };
+      case 'permission':
+        return {
+          title: '权限不足',
+          description: '您没有访问锁分析数据的权限，请联系管理员',
+          showAction: false
+        };
+      case 'no_data':
+        return {
+          title: '当前没有锁数据',
+          description: '数据库当前没有活跃的锁或等待事件，这通常是正常情况',
+          showAction: true
+        };
+      case 'error':
+      default:
+        return {
+          title: '加载失败',
+          description: error || '获取锁分析数据时发生错误',
+          showAction: true
+        };
+    }
+  };
+
   if (loading && !dashboardData) {
     return (
       <div style={{ textAlign: 'center', padding: '50px 0' }}>
-        <Spin size="large" tip="加载中..." />
+        <Spin size="large" tip="正在加载锁分析数据..." />
       </div>
     );
   }
 
-  if (error) {
+  if (error || !dashboardData) {
+    const messageInfo = getNoDataMessage();
     return (
-      <Alert
-        message="加载失败"
-        description={error}
-        type="error"
-        showIcon
-        action={
-          <Button size="small" onClick={fetchDashboardData}>
-            重试
-          </Button>
-        }
-      />
-    );
-  }
-
-  if (!dashboardData) {
-    return (
-      <Empty
-        description="暂无锁分析数据"
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-      />
+      <Card>
+        <Empty
+          description={
+            <div>
+              <Title level={5}>{messageInfo.title}</Title>
+              <Paragraph type="secondary">{messageInfo.description}</Paragraph>
+            </div>
+          }
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        >
+          {messageInfo.showAction && (
+            <Button type="primary" onClick={fetchDashboardData}>
+              重新加载
+            </Button>
+          )}
+        </Empty>
+      </Card>
     );
   }
 
   const {
+    database_type,
     overall_health_score = 0,
     lock_efficiency_score = 0,
     contention_severity = 'low',
@@ -116,7 +203,11 @@ const LockAnalysisDashboardAntd = ({ databaseId }) => {
     active_wait_chains = [],
     top_contentions = [],
     optimization_suggestions = [],
-    lock_trends = {}
+    lock_trends = {},
+    // 数据库特定指标
+    pg_specific_metrics,
+    mysql_specific_metrics,
+    oceanbase_specific_metrics
   } = dashboardData;
 
   // 准备趋势图数据
@@ -484,6 +575,164 @@ const LockAnalysisDashboardAntd = ({ databaseId }) => {
               }}
             />
           </TabPane>
+
+          {/* 数据库特定指标标签页 */}
+          {(database_type === 'postgresql' || database_type === 'mysql' || database_type === 'oceanbase') && (
+            <TabPane
+              tab={
+                <span>
+                  <BarChartOutlined />
+                  {database_type?.toUpperCase()} 特定指标
+                </span>
+              }
+              key="5"
+            >
+              <Card>
+                {database_type === 'postgresql' && pg_specific_metrics && (
+                  <div>
+                    <Title level={5}>PostgreSQL 锁指标</Title>
+                    <Row gutter={[16, 16]}>
+                      <Col span={6}>
+                        <Statistic
+                          title="Advisory Locks"
+                          value={pg_specific_metrics.advisory_locks || 0}
+                          prefix={<LockOutlined />}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Statistic
+                          title="Relation Locks"
+                          value={pg_specific_metrics.relation_locks || 0}
+                          prefix={<LockOutlined />}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Statistic
+                          title="Transaction Locks"
+                          value={pg_specific_metrics.transaction_locks || 0}
+                          prefix={<LockOutlined />}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Statistic
+                          title="Autovacuum Workers"
+                          value={pg_specific_metrics.autovacuum_workers || 0}
+                          valueStyle={{ color: pg_specific_metrics.vacuum_running ? '#52c41a' : '#8c8c8c' }}
+                        />
+                      </Col>
+                    </Row>
+                  </div>
+                )}
+
+                {database_type === 'mysql' && mysql_specific_metrics && (
+                  <div>
+                    <Title level={5}>MySQL InnoDB 锁指标</Title>
+                    <Row gutter={[16, 16]}>
+                      <Col span={6}>
+                        <Statistic
+                          title="InnoDB Row Locks"
+                          value={mysql_specific_metrics.innodb_row_locks || 0}
+                          prefix={<LockOutlined />}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Statistic
+                          title="Table Locks"
+                          value={mysql_specific_metrics.innodb_table_locks || 0}
+                          prefix={<LockOutlined />}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Statistic
+                          title="Gap Locks"
+                          value={mysql_specific_metrics.gap_locks || 0}
+                          prefix={<AlertOutlined />}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Statistic
+                          title="Next-Key Locks"
+                          value={mysql_specific_metrics.next_key_locks || 0}
+                          prefix={<LockOutlined />}
+                        />
+                      </Col>
+                    </Row>
+                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                      <Col span={6}>
+                        <Statistic
+                          title="Metadata Locks"
+                          value={mysql_specific_metrics.metadata_locks || 0}
+                          prefix={<LockOutlined />}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Statistic
+                          title="Auto-Inc Locks"
+                          value={mysql_specific_metrics.auto_inc_locks || 0}
+                          prefix={<ThunderboltOutlined />}
+                        />
+                      </Col>
+                    </Row>
+                  </div>
+                )}
+
+                {database_type === 'oceanbase' && oceanbase_specific_metrics && (
+                  <div>
+                    <Title level={5}>OceanBase 锁指标</Title>
+                    <Row gutter={[16, 16]}>
+                      <Col span={6}>
+                        <Statistic
+                          title="分布式锁"
+                          value={oceanbase_specific_metrics.distributed_locks || 0}
+                          prefix={<LockOutlined />}
+                          valueStyle={{ color: '#1890ff' }}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Statistic
+                          title="本地锁"
+                          value={oceanbase_specific_metrics.local_locks || 0}
+                          prefix={<LockOutlined />}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Statistic
+                          title="分区锁"
+                          value={oceanbase_specific_metrics.partition_locks || 0}
+                          prefix={<LockOutlined />}
+                        />
+                      </Col>
+                      <Col span={6}>
+                        <Statistic
+                          title="全局索引锁"
+                          value={oceanbase_specific_metrics.global_index_locks || 0}
+                          prefix={<LockOutlined />}
+                        />
+                      </Col>
+                    </Row>
+                    {oceanbase_specific_metrics.tenant_locks && (
+                      <div style={{ marginTop: 16 }}>
+                        <Title level={5}>租户级锁统计</Title>
+                        <Row gutter={[16, 16]}>
+                          {Object.entries(oceanbase_specific_metrics.tenant_locks).map(([tenant, count]) => (
+                            <Col span={8} key={tenant}>
+                              <Card size="small">
+                                <Statistic
+                                  title={`租户: ${tenant}`}
+                                  value={count}
+                                  prefix={<LockOutlined />}
+                                />
+                              </Card>
+                            </Col>
+                          ))}
+                        </Row>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Card>
+            </TabPane>
+          )}
         </Tabs>
       </Card>
     </div>

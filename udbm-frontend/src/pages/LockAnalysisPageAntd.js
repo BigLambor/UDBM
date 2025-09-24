@@ -15,6 +15,9 @@ import {
 } from '@ant-design/icons';
 
 import LockAnalysisDashboardAntd from '../components/LockAnalysisDashboardAntd';
+import DatabaseSelector from '../components/DatabaseSelector';
+import DataSourceIndicator from '../components/DataSourceIndicator';
+import LockAnalysisHelper from '../components/LockAnalysisHelper';
 import { performanceAPI } from '../services/api';
 
 const { Option } = Select;
@@ -23,7 +26,8 @@ const { Title, Text, Paragraph } = Typography;
 
 const LockAnalysisPageAntd = () => {
   const [activeTab, setActiveTab] = useState('1');
-  const [databaseId, setDatabaseId] = useState(1);
+  const [selectedDatabase, setSelectedDatabase] = useState(null);
+  const [selectedDatabaseType, setSelectedDatabaseType] = useState('all');
   const [databases, setDatabases] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -45,16 +49,21 @@ const LockAnalysisPageAntd = () => {
 
   useEffect(() => {
     fetchDatabases();
-    fetchMonitoringStatus();
-    fetchReports();
-  }, [databaseId]);
+  }, []);
+
+  useEffect(() => {
+    if (selectedDatabase && selectedDatabase.id) {
+      fetchMonitoringStatus();
+      fetchReports();
+    }
+  }, [selectedDatabase]);
 
   const fetchDatabases = async () => {
     try {
       const response = await performanceAPI.getDatabases();
-      setDatabases(response || []);
-      if (response && response.length > 0 && !databaseId) {
-        setDatabaseId(response[0].id);
+      setDatabases(Array.isArray(response) ? response : []);
+      if (Array.isArray(response) && response.length > 0 && !selectedDatabase) {
+        setSelectedDatabase(response[0]);
       }
     } catch (err) {
       console.error('获取数据库列表失败:', err);
@@ -63,30 +72,36 @@ const LockAnalysisPageAntd = () => {
   };
 
   const fetchMonitoringStatus = async () => {
-    if (!databaseId) return;
+    if (!selectedDatabase || !selectedDatabase.id) return;
     try {
-      const response = await performanceAPI.getLockMonitoringStatus(databaseId);
+      const response = await performanceAPI.getLockMonitoringStatus(selectedDatabase.id);
       setMonitoringStatus(response);
     } catch (err) {
       console.error('获取监控状态失败:', err);
+      // 不显示错误消息，静默处理
     }
   };
 
   const fetchReports = async () => {
-    if (!databaseId) return;
+    if (!selectedDatabase || !selectedDatabase.id) return;
     try {
-      const response = await performanceAPI.getLockAnalysisReports(databaseId);
+      const response = await performanceAPI.getLockAnalysisReports(selectedDatabase.id);
       setReports(response || []);
     } catch (err) {
       console.error('获取报告列表失败:', err);
+      // 不显示错误消息，静默处理
     }
   };
 
   const handleAnalysis = async (values) => {
+    if (!selectedDatabase || !selectedDatabase.id) {
+      message.warning('请先选择数据库');
+      return;
+    }
     try {
       setLoading(true);
-      const response = await performanceAPI.analyzeLocks(databaseId, {
-        database_id: databaseId,
+      const response = await performanceAPI.analyzeLocks(selectedDatabase.id, {
+        database_id: selectedDatabase.id,
         analysis_type: values.analysisType,
         time_range_hours: values.timeRange,
         include_wait_chains: true,
@@ -104,8 +119,12 @@ const LockAnalysisPageAntd = () => {
   };
 
   const handleStartMonitoring = async (values) => {
+    if (!selectedDatabase || !selectedDatabase.id) {
+      message.warning('请先选择数据库');
+      return;
+    }
     try {
-      await performanceAPI.startLockMonitoring(databaseId, values.collectionInterval);
+      await performanceAPI.startLockMonitoring(selectedDatabase.id, values.collectionInterval);
       setMonitoringModalVisible(false);
       fetchMonitoringStatus();
       message.success('锁监控已启动');
@@ -115,8 +134,12 @@ const LockAnalysisPageAntd = () => {
   };
 
   const handleStopMonitoring = async () => {
+    if (!selectedDatabase || !selectedDatabase.id) {
+      message.warning('请先选择数据库');
+      return;
+    }
     try {
-      await performanceAPI.stopLockMonitoring(databaseId);
+      await performanceAPI.stopLockMonitoring(selectedDatabase.id);
       fetchMonitoringStatus();
       message.success('锁监控已停止');
     } catch (err) {
@@ -125,10 +148,14 @@ const LockAnalysisPageAntd = () => {
   };
 
   const handleGenerateReport = async (values) => {
+    if (!selectedDatabase || !selectedDatabase.id) {
+      message.warning('请先选择数据库');
+      return;
+    }
     try {
       setLoading(true);
       await performanceAPI.generateLockAnalysisReport(
-        databaseId,
+        selectedDatabase.id,
         values.reportType,
         values.days
       );
@@ -297,46 +324,61 @@ const LockAnalysisPageAntd = () => {
       </div>
 
       {/* 数据库选择和监控状态 */}
-      <Card style={{ marginBottom: 16 }}>
-        <Row gutter={[16, 16]} align="middle">
-          <Col span={6}>
-            <Select
-              style={{ width: '100%' }}
-              placeholder="选择数据库"
-              value={databaseId}
-              onChange={setDatabaseId}
-            >
-              {databases.map((db) => (
-                <Option key={db.id} value={db.id}>
-                  {db.name} ({db.type})
-                </Option>
-              ))}
-            </Select>
-          </Col>
-          <Col span={6}>
-            <Space>
-              <Text>监控状态:</Text>
-              {getMonitoringStatusTag(monitoringStatus?.status)}
-            </Space>
-          </Col>
-          <Col span={6}>
-            <Badge
-              status={monitoringStatus?.status === 'running' ? 'processing' : 'default'}
-              text={`收集间隔: ${monitoringStatus?.collection_interval || 60}秒`}
-            />
-          </Col>
-          <Col span={6}>
-            <Badge
-              count={monitoringStatus?.total_events_collected || 0}
-              showZero
-              overflowCount={999999}
-              style={{ backgroundColor: '#52c41a' }}
-            >
-              <Text>已收集事件</Text>
-            </Badge>
-          </Col>
-        </Row>
-      </Card>
+      <DatabaseSelector
+        databases={databases}
+        selectedDatabase={selectedDatabase}
+        onDatabaseChange={setSelectedDatabase}
+        selectedType={selectedDatabaseType}
+        onTypeChange={setSelectedDatabaseType}
+        showTypeFilter={true}
+        showStats={true}
+        loading={loading}
+        style={{ marginBottom: 16 }}
+      />
+      
+      {/* 数据源指示器 */}
+      {selectedDatabase && (
+        <DataSourceIndicator
+          database={selectedDatabase}
+          isConnected={true}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      
+      {/* 监控状态卡片 */}
+      {selectedDatabase && (
+        <Card style={{ marginBottom: 16 }}>
+          <Row gutter={[16, 16]} align="middle">
+            <Col span={6}>
+              <Space>
+                <Text>监控状态:</Text>
+                {getMonitoringStatusTag(monitoringStatus?.status)}
+              </Space>
+            </Col>
+            <Col span={6}>
+              <Badge
+                status={monitoringStatus?.status === 'running' ? 'processing' : 'default'}
+                text={`收集间隔: ${monitoringStatus?.collection_interval || 60}秒`}
+              />
+            </Col>
+            <Col span={6}>
+              <Badge
+                count={monitoringStatus?.total_events_collected || 0}
+                showZero
+                overflowCount={999999}
+                style={{ backgroundColor: '#52c41a' }}
+              >
+                <Text>已收集事件</Text>
+              </Badge>
+            </Col>
+            <Col span={6}>
+              <Text type="secondary">
+                数据库类型: {selectedDatabase.type ? selectedDatabase.type.toUpperCase() : '未知'}
+              </Text>
+            </Col>
+          </Row>
+        </Card>
+      )}
 
       {/* 操作按钮 */}
       <Space style={{ marginBottom: 16 }}>
@@ -400,7 +442,17 @@ const LockAnalysisPageAntd = () => {
             }
             key="1"
           >
-            <LockAnalysisDashboardAntd databaseId={databaseId} />
+            {selectedDatabase ? (
+              <div>
+                <LockAnalysisHelper databaseType={selectedDatabase.type} />
+                <LockAnalysisDashboardAntd databaseId={selectedDatabase.id} />
+              </div>
+            ) : (
+              <Empty
+                description="请选择数据库"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            )}
           </TabPane>
 
           <TabPane
