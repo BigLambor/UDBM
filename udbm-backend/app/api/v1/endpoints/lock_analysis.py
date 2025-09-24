@@ -20,7 +20,9 @@ from app.schemas.lock_analysis import (
     LockOptimizationScriptResponse, LockMonitoringConfigResponse
 )
 from app.services.performance_tuning.lock_analyzer import LockAnalyzer
+from app.services.performance_tuning.lock_analyzer_providers import get_lock_analyzer_by_type
 from app.services.db_providers.registry import get_provider, get_database_type_name
+from app.models.database import Database
 
 router = APIRouter()
 
@@ -44,50 +46,39 @@ def get_lock_analyzer(session: Session = Depends(get_sync_db_session)) -> LockAn
     return LockAnalyzer(session)
 
 
-@router.get("/dashboard/{database_id}", response_model=LockDashboardResponse)
+@router.get("/dashboard/{database_id}")
 async def get_lock_dashboard(
     database_id: int,
-    analyzer: LockAnalyzer = Depends(get_lock_analyzer)
+    db: AsyncSession = Depends(get_db)
 ):
     """获取锁分析仪表板"""
     try:
-        # 实时锁分析
-        realtime_analysis = analyzer.analyze_locks_realtime(database_id)
+        # 获取数据库信息
+        session = get_sync_db_session()
+        database = session.query(Database).filter(Database.id == database_id).first()
         
-        # 获取等待链
-        wait_chains = analyzer.analyze_wait_chains(database_id)
+        if not database:
+            raise HTTPException(status_code=404, detail="数据库不存在")
         
-        # 获取竞争分析
-        contentions = analyzer.analyze_lock_contentions(database_id)
+        # 根据数据库类型获取对应的锁分析器
+        db_type = database.type.lower() if database.type else "unknown"
+        lock_analyzer_class = get_lock_analyzer_by_type(db_type)
         
-        # 生成优化建议
-        suggestions = analyzer.generate_optimization_suggestions(realtime_analysis)
+        # 获取模拟数据
+        mock_data = lock_analyzer_class.get_mock_data(database_id)
         
-        return LockDashboardResponse(
-            database_id=database_id,
-            analysis_timestamp=datetime.now(),
-            overall_health_score=realtime_analysis["health_score"],
-            lock_efficiency_score=realtime_analysis["health_score"] * 0.9,  # 模拟锁效率评分
-            contention_severity="medium" if realtime_analysis["health_score"] < 80 else "low",
-            current_locks=len(realtime_analysis["current_locks"]),
-            waiting_locks=len([lock for lock in realtime_analysis["current_locks"] if lock.get("wait_duration", 0) > 0]),
-            deadlock_count_today=0,  # 模拟数据
-            timeout_count_today=0,   # 模拟数据
-            hot_objects=realtime_analysis.get("contentions", [])[:5],
-            active_wait_chains=[LockWaitChainResponse(**chain) for chain in wait_chains[:3]],
-            top_contentions=[LockContentionResponse(**contention) for contention in contentions[:5]],
-            optimization_suggestions=suggestions[:5],
-            lock_trends={
-                "wait_time": [
-                    {"timestamp": (datetime.now() - timedelta(hours=i)).isoformat(), "value": 5.0 - i * 0.5}
-                    for i in range(24, 0, -1)
-                ],
-                "contention_count": [
-                    {"timestamp": (datetime.now() - timedelta(hours=i)).isoformat(), "value": 10 + i}
-                    for i in range(24, 0, -1)
-                ]
-            }
-        )
+        # 如果是不支持的数据库类型
+        if "error" in mock_data and mock_data["error"] == "unsupported":
+            raise HTTPException(
+                status_code=404, 
+                detail=f"{db_type.upper()} 数据库暂不支持锁分析功能"
+            )
+        
+        # 返回数据
+        return mock_data
+        
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取锁分析仪表板失败: {str(e)}")
 
@@ -96,27 +87,46 @@ async def get_lock_dashboard(
 async def analyze_locks(
     database_id: int,
     request: LockAnalysisRequest,
-    analyzer: LockAnalyzer = Depends(get_lock_analyzer)
+    db: AsyncSession = Depends(get_db)
 ):
     """执行锁分析"""
     try:
+        # 获取数据库信息
+        session = get_sync_db_session()
+        database = session.query(Database).filter(Database.id == database_id).first()
+        
+        if not database:
+            raise HTTPException(status_code=404, detail="数据库不存在")
+        
+        # 根据数据库类型获取对应的锁分析器
+        db_type = database.type.lower() if database.type else "unknown"
+        lock_analyzer_class = get_lock_analyzer_by_type(db_type)
+        
+        # 获取模拟数据
+        mock_data = lock_analyzer_class.get_mock_data(database_id)
+        
+        # 如果是不支持的数据库类型
+        if "error" in mock_data and mock_data["error"] == "unsupported":
+            raise HTTPException(
+                status_code=404, 
+                detail=f"{db_type.upper()} 数据库暂不支持锁分析功能"
+            )
+        
+        # 根据分析类型返回不同的结果
         if request.analysis_type == "realtime":
-            result = analyzer.analyze_locks_realtime(database_id)
-        elif request.analysis_type == "historical":
-            result = analyzer.analyze_locks_historical(database_id, request.time_range_hours)
-        elif request.analysis_type == "comprehensive":
-            # 综合分析
-            realtime_result = analyzer.analyze_locks_realtime(database_id)
-            historical_result = analyzer.analyze_locks_historical(database_id, request.time_range_hours)
-            
             result = {
-                "analysis_type": "comprehensive",
-                "realtime_analysis": realtime_result,
-                "historical_analysis": historical_result,
-                "combined_insights": _generate_combined_insights(realtime_result, historical_result)
+                "health_score": mock_data["overall_health_score"],
+                "current_locks": mock_data.get("hot_objects", []),
+                "wait_chains": mock_data.get("active_wait_chains", []),
+                "contentions": mock_data.get("hot_objects", [])
+            }
+        elif request.analysis_type == "historical":
+            result = {
+                "trends": mock_data.get("lock_trends", {}),
+                "summary": f"最近{request.time_range_hours}小时的锁分析摘要"
             }
         else:
-            raise HTTPException(status_code=400, detail="不支持的分析类型")
+            result = mock_data
         
         return {
             "database_id": database_id,
@@ -124,6 +134,8 @@ async def analyze_locks(
             "analysis_timestamp": datetime.now().isoformat(),
             "result": result
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"锁分析失败: {str(e)}")
 
