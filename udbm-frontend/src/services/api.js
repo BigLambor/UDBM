@@ -351,6 +351,76 @@ export const performanceAPI = {
     api.post(`/performance/mysql/quick-optimization/${databaseId}`, null, {
       params: { focus_area: focusArea }
     }),
+
+  // =====================================
+  // 锁分析 API 接口
+  // =====================================
+
+  // 获取锁分析仪表板
+  getLockDashboard: (databaseId) =>
+    api.get(`/performance-tuning/lock-analysis/dashboard/${databaseId}`),
+
+  // 执行锁分析
+  analyzeLocks: (databaseId, data) =>
+    api.post(`/performance-tuning/lock-analysis/analyze/${databaseId}`, data),
+
+  // 获取等待链
+  getWaitChains: (databaseId, params = {}) =>
+    api.get(`/performance-tuning/lock-analysis/wait-chains/${databaseId}`, { params }),
+
+  // 获取锁竞争分析
+  getLockContentions: (databaseId, params = {}) =>
+    api.get(`/performance-tuning/lock-analysis/contentions/${databaseId}`, { params }),
+
+  // 获取锁事件历史
+  getLockEvents: (databaseId, params = {}) =>
+    api.get(`/performance-tuning/lock-analysis/events/${databaseId}`, { params }),
+
+  // 获取锁分析总结
+  getLockAnalysisSummary: (databaseId, days = 7) =>
+    api.get(`/performance-tuning/lock-analysis/summary/${databaseId}`, { params: { days } }),
+
+  // 获取优化建议
+  getOptimizationSuggestions: (databaseId, analysisResult) =>
+    api.post(`/performance-tuning/lock-analysis/optimization-suggestions/${databaseId}`, analysisResult),
+
+  // 创建优化任务
+  createOptimizationTask: (databaseId, taskConfig) =>
+    api.post(`/performance-tuning/lock-analysis/create-optimization-task/${databaseId}`, taskConfig),
+
+  // 获取优化任务列表
+  getOptimizationTasks: (databaseId, params = {}) =>
+    api.get(`/performance-tuning/lock-analysis/optimization-tasks/${databaseId}`, { params }),
+
+  // 生成优化脚本
+  generateOptimizationScript: (databaseId, optimizationType, analysisResult) =>
+    api.post(`/performance-tuning/lock-analysis/generate-optimization-script/${databaseId}`, analysisResult, {
+      params: { optimization_type: optimizationType }
+    }),
+
+  // 获取锁分析报告
+  getLockAnalysisReports: (databaseId, params = {}) =>
+    api.get(`/performance-tuning/lock-analysis/reports/${databaseId}`, { params }),
+
+  // 生成锁分析报告
+  generateLockAnalysisReport: (databaseId, reportType = 'custom', days = 7) =>
+    api.post(`/performance-tuning/lock-analysis/generate-report/${databaseId}`, null, {
+      params: { report_type: reportType, days }
+    }),
+
+  // 启动锁监控
+  startLockMonitoring: (databaseId, collectionInterval = 60) =>
+    api.post(`/performance-tuning/lock-analysis/monitoring/start/${databaseId}`, null, {
+      params: { collection_interval: collectionInterval }
+    }),
+
+  // 停止锁监控
+  stopLockMonitoring: (databaseId) =>
+    api.post(`/performance-tuning/lock-analysis/monitoring/stop/${databaseId}`),
+
+  // 获取监控状态
+  getLockMonitoringStatus: (databaseId) =>
+    api.get(`/performance-tuning/lock-analysis/monitoring/status/${databaseId}`)
 };
 
 // 健康检查API

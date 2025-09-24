@@ -82,8 +82,8 @@ const LockAnalysisPage = () => {
 
   const fetchDatabases = async () => {
     try {
-      const response = await performanceAPI.get('/databases');
-      setDatabases(response.data);
+      const response = await performanceAPI.getDatabases();
+      setDatabases(response);
     } catch (err) {
       console.error('获取数据库列表失败:', err);
     }
@@ -91,8 +91,8 @@ const LockAnalysisPage = () => {
 
   const fetchMonitoringStatus = async () => {
     try {
-      const response = await performanceAPI.get(`/performance-tuning/lock-analysis/monitoring/status/${databaseId}`);
-      setMonitoringStatus(response.data);
+      const response = await performanceAPI.getLockMonitoringStatus(databaseId);
+      setMonitoringStatus(response);
     } catch (err) {
       console.error('获取监控状态失败:', err);
     }
@@ -100,8 +100,8 @@ const LockAnalysisPage = () => {
 
   const fetchReports = async () => {
     try {
-      const response = await performanceAPI.get(`/performance-tuning/lock-analysis/reports/${databaseId}`);
-      setReports(response.data);
+      const response = await performanceAPI.getLockAnalysisReports(databaseId);
+      setReports(response);
     } catch (err) {
       console.error('获取报告列表失败:', err);
     }
@@ -110,7 +110,7 @@ const LockAnalysisPage = () => {
   const handleAnalysis = async () => {
     try {
       setLoading(true);
-      const response = await performanceAPI.post(`/performance-tuning/lock-analysis/analyze/${databaseId}`, {
+      const response = await performanceAPI.analyzeLocks(databaseId, {
         database_id: databaseId,
         analysis_type: analysisType,
         time_range_hours: timeRange,
@@ -118,7 +118,7 @@ const LockAnalysisPage = () => {
         include_contention: true,
         min_wait_time: 0.1
       });
-      setAnalysisResult(response.data);
+      setAnalysisResult(response);
       setAnalysisDialogOpen(false);
     } catch (err) {
       setError('分析失败: ' + (err.response?.data?.detail || err.message));
@@ -129,9 +129,7 @@ const LockAnalysisPage = () => {
 
   const handleStartMonitoring = async () => {
     try {
-      await performanceAPI.post(`/performance-tuning/lock-analysis/monitoring/start/${databaseId}`, null, {
-        params: { collection_interval: collectionInterval }
-      });
+      await performanceAPI.startLockMonitoring(databaseId, collectionInterval);
       setMonitoringDialogOpen(false);
       fetchMonitoringStatus();
     } catch (err) {
@@ -141,7 +139,7 @@ const LockAnalysisPage = () => {
 
   const handleStopMonitoring = async () => {
     try {
-      await performanceAPI.post(`/performance-tuning/lock-analysis/monitoring/stop/${databaseId}`);
+      await performanceAPI.stopLockMonitoring(databaseId);
       fetchMonitoringStatus();
     } catch (err) {
       setError('停止监控失败: ' + (err.response?.data?.detail || err.message));
@@ -151,12 +149,7 @@ const LockAnalysisPage = () => {
   const handleGenerateReport = async () => {
     try {
       setLoading(true);
-      await performanceAPI.post(`/performance-tuning/lock-analysis/generate-report/${databaseId}`, null, {
-        params: { 
-          report_type: reportType,
-          days: reportDays
-        }
-      });
+      await performanceAPI.generateLockAnalysisReport(databaseId, reportType, reportDays);
       setReportDialogOpen(false);
       fetchReports();
     } catch (err) {

@@ -58,8 +58,8 @@ const LockAnalysisDashboard = ({ databaseId }) => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await performanceAPI.get(`/performance-tuning/lock-analysis/dashboard/${databaseId}`);
-      setDashboardData(response.data);
+      const response = await performanceAPI.getLockDashboard(databaseId);
+      setDashboardData(response);
       setError(null);
     } catch (err) {
       setError('获取锁分析数据失败: ' + (err.response?.data?.detail || err.message));
