@@ -26,7 +26,7 @@ import SlowQueryAnalysis from './pages/SlowQueryAnalysis';
 import IndexOptimization from './pages/IndexOptimization';
 import SystemDiagnosis from './pages/SystemDiagnosis';
 import ExecutionPlanAnalysis from './pages/ExecutionPlanAnalysis';
-import LockAnalysisPage from './pages/LockAnalysisPage';
+import LockAnalysisPageAntd from './pages/LockAnalysisPageAntd';
 
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -348,7 +348,7 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
               <Route path="/performance/index-optimization" element={<IndexOptimization />} />
               <Route path="/performance/execution-plan-analysis" element={<ExecutionPlanAnalysis />} />
               <Route path="/performance/system-diagnosis" element={<SystemDiagnosis />} />
-              <Route path="/performance/lock-analysis" element={<LockAnalysisPage />} />
+              <Route path="/performance/lock-analysis" element={<LockAnalysisPageAntd />} />
             </Routes>
           </div>
         </Content>
