@@ -108,6 +108,7 @@ const DatabaseInstanceCard = ({
     cpuUsage: Math.floor(Math.random() * 100),
     memoryUsage: Math.floor(Math.random() * 100),
     connectionCount: Math.floor(Math.random() * 200),
+    avgResponseTime: Math.floor(Math.random() * 100) + 10, // 10-110ms
     lastCheck: new Date(Date.now() - Math.floor(Math.random() * 60) * 60 * 1000)
   };
 
@@ -290,7 +291,7 @@ const DatabaseInstanceCard = ({
       }}>
         <div style={{ 
           display: 'grid', 
-          gridTemplateColumns: '1fr 1fr 1fr',
+          gridTemplateColumns: '1fr 1fr 1fr 1fr',
           gap: '16px',
           textAlign: 'center'
         }}>
@@ -331,6 +332,19 @@ const DatabaseInstanceCard = ({
             </div>
             <div style={{ fontSize: '11px', color: '#666', textTransform: 'uppercase', fontWeight: '500' }}>
               连接数
+            </div>
+          </div>
+          <div>
+            <div style={{ 
+              fontSize: '20px', 
+              fontWeight: 'bold',
+              color: getPerformanceColor(performanceData.avgResponseTime, { warning: 50, critical: 80 }),
+              marginBottom: '4px'
+            }}>
+              {performanceData.avgResponseTime}ms
+            </div>
+            <div style={{ fontSize: '11px', color: '#666', textTransform: 'uppercase', fontWeight: '500' }}>
+              响应时间
             </div>
           </div>
         </div>

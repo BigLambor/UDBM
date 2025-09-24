@@ -320,23 +320,6 @@ const Dashboard = () => {
             </Col>
             <Col span={12}>
               <MobileStatsCard
-                title="活跃连接"
-                value={dashboardData.systemStats?.totalConnections || 0}
-                prefix={<RocketOutlined />}
-                color="#52c41a"
-              />
-            </Col>
-            <Col span={12}>
-              <MobileStatsCard
-                title="响应时间"
-                value={dashboardData.systemStats?.avgResponseTime || 0}
-                suffix="ms"
-                prefix={<ClockCircleOutlined />}
-                color="#faad14"
-              />
-            </Col>
-            <Col span={12}>
-              <MobileStatsCard
                 title="今日告警"
                 value={dashboardData.systemStats?.alertsToday || 0}
                 prefix={<FireOutlined />}
@@ -348,7 +331,7 @@ const Dashboard = () => {
       ) : (
         // 桌面端：增强的统计卡片
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={12}>
             <Card 
               hoverable
               style={{ 
@@ -368,46 +351,7 @@ const Dashboard = () => {
               </div>
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card 
-              hoverable
-              style={{ 
-                borderLeft: '4px solid #52c41a',
-                boxShadow: '0 2px 8px rgba(82, 196, 26, 0.1)'
-              }}
-            >
-              <Statistic
-                title="活跃连接"
-                value={dashboardData.systemStats?.totalConnections || 0}
-                prefix={<RocketOutlined style={{ color: '#52c41a' }} />}
-                valueStyle={{ color: '#52c41a', fontSize: '24px' }}
-              />
-              <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
-                最大: {Math.floor((dashboardData.systemStats?.totalConnections || 0) * 1.2)} 个
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card 
-              hoverable
-              style={{ 
-                borderLeft: '4px solid #faad14',
-                boxShadow: '0 2px 8px rgba(250, 173, 20, 0.1)'
-              }}
-            >
-              <Statistic
-                title="平均响应时间"
-                value={dashboardData.systemStats?.avgResponseTime || 0}
-                suffix="ms"
-                prefix={<ClockCircleOutlined style={{ color: '#faad14' }} />}
-                valueStyle={{ color: '#faad14', fontSize: '24px' }}
-              />
-              <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
-                目标: &lt; 50ms
-              </div>
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={12}>
             <Card 
               hoverable
               style={{ 
@@ -787,85 +731,6 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* 添加更多实用信息区域 */}
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col xs={24} md={12}>
-          <Card 
-            title={
-              <span>
-                <BarChartOutlined style={{ marginRight: 8, color: '#52c41a' }} />
-                性能趋势
-              </span>
-            }
-            size="small"
-            bodyStyle={{ padding: '16px' }}
-          >
-            <Row gutter={16}>
-              <Col span={8}>
-                <Statistic
-                  title="CPU使用率"
-                  value={72}
-                  suffix="%"
-                  valueStyle={{ color: '#faad14', fontSize: '16px' }}
-                />
-              </Col>
-              <Col span={8}>
-                <Statistic
-                  title="内存使用率"
-                  value={68}
-                  suffix="%"
-                  valueStyle={{ color: '#52c41a', fontSize: '16px' }}
-                />
-              </Col>
-              <Col span={8}>
-                <Statistic
-                  title="磁盘使用率"
-                  value={45}
-                  suffix="%"
-                  valueStyle={{ color: '#1890ff', fontSize: '16px' }}
-                />
-              </Col>
-            </Row>
-          </Card>
-        </Col>
-        
-        <Col xs={24} md={12}>
-          <Card 
-            title={
-              <span>
-                <ClockCircleOutlined style={{ marginRight: 8, color: '#1890ff' }} />
-                今日统计
-              </span>
-            }
-            size="small"
-            bodyStyle={{ padding: '16px' }}
-          >
-            <Row gutter={16}>
-              <Col span={8}>
-                <Statistic
-                  title="查询总数"
-                  value={15420}
-                  valueStyle={{ color: '#1890ff', fontSize: '16px' }}
-                />
-              </Col>
-              <Col span={8}>
-                <Statistic
-                  title="慢查询"
-                  value={23}
-                  valueStyle={{ color: '#f5222d', fontSize: '16px' }}
-                />
-              </Col>
-              <Col span={8}>
-                <Statistic
-                  title="错误数"
-                  value={5}
-                  valueStyle={{ color: '#faad14', fontSize: '16px' }}
-                />
-              </Col>
-            </Row>
-          </Card>
-        </Col>
-      </Row>
     </div>
   );
 };

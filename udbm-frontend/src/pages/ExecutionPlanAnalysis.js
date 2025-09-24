@@ -8,7 +8,7 @@ import {
   DatabaseOutlined, BarChartOutlined, PlayCircleOutlined,
   FileTextOutlined, BulbOutlined, ReloadOutlined,
   CheckCircleOutlined, WarningOutlined, ClockCircleOutlined,
-  ThunderboltOutlined, TableOutlined
+  ThunderboltOutlined
 } from '@ant-design/icons';
 
 import { performanceAPI } from '../services/api';
@@ -406,7 +406,7 @@ const ExecutionPlanAnalysis = () => {
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ margin: 0 }}>
-            <TableOutlined style={{ marginRight: 8 }} />
+            <DatabaseOutlined style={{ marginRight: 8 }} />
             执行计划分析
           </h2>
           <p style={{ margin: '8px 0', color: '#666' }}>

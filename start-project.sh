@@ -27,6 +27,7 @@ DOCKER_MODE=false
 VERBOSE=false
 SKIP_CHECKS=false
 FORCE_CLEANUP=false
+LAN_MODE=false
 
 # 进程ID文件
 PID_DIR="$PROJECT_ROOT/.pids"
@@ -40,6 +41,32 @@ BACKEND_LOG="$LOG_DIR/backend.log"
 FRONTEND_LOG="$LOG_DIR/frontend.log"
 
 # 函数定义
+
+# 获取本机IP地址
+get_local_ip() {
+    local ip=""
+    
+    # 尝试多种方法获取IP地址
+    if command -v ip >/dev/null 2>&1; then
+        # Linux系统
+        ip=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' 2>/dev/null)
+    elif command -v ifconfig >/dev/null 2>&1; then
+        # macOS/Unix系统
+        ip=$(ifconfig | grep -E "inet (192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)" | head -1 | awk '{print $2}' | sed 's/addr://')
+    fi
+    
+    # 如果上述方法都失败，尝试通过外部服务获取
+    if [ -z "$ip" ]; then
+        ip=$(curl -s --connect-timeout 3 ifconfig.me 2>/dev/null || curl -s --connect-timeout 3 ipinfo.io/ip 2>/dev/null || echo "127.0.0.1")
+    fi
+    
+    # 如果仍然为空，使用默认值
+    if [ -z "$ip" ]; then
+        ip="127.0.0.1"
+    fi
+    
+    echo "$ip"
+}
 
 # 显示帮助信息
 show_help() {
@@ -59,6 +86,7 @@ show_help() {
     echo "  -b, --backend   仅启动后端"
     echo "  -f, --frontend  仅启动前端"
     echo "  -p, --port      指定端口 (后端:8000 前端:3000)"
+    echo "  -l, --lan       局域网模式启动（允许同事访问）"
     echo "  -v, --verbose   详细输出"
     echo "  -s, --skip      跳过环境检查"
     echo "  --force         强制清理占用端口的进程"
@@ -66,6 +94,7 @@ show_help() {
     echo ""
     echo -e "${BLUE}示例:${NC}"
     echo "  $0 start                    # 本地开发模式启动"
+    echo "  $0 start --lan              # 局域网模式启动（同事可访问）"
     echo "  $0 start --docker           # Docker模式启动"
     echo "  $0 start --backend --port 8001  # 仅启动后端在8001端口"
     echo "  $0 stop                     # 停止所有服务"
@@ -307,7 +336,15 @@ start_frontend() {
 
         # 设置环境变量
         export PORT=$FRONTEND_PORT
-        export REACT_APP_API_BASE_URL="http://localhost:$BACKEND_PORT/api/v1"
+        
+        # 根据模式设置API基础URL
+        if [ "$LAN_MODE" = true ]; then
+            local local_ip=$(get_local_ip)
+            export REACT_APP_API_BASE_URL="http://$local_ip:$BACKEND_PORT/api/v1"
+            log "INFO" "局域网模式：前端将连接到 $local_ip:$BACKEND_PORT"
+        else
+            export REACT_APP_API_BASE_URL="http://localhost:$BACKEND_PORT/api/v1"
+        fi
 
         # 启动前端服务
         nohup npm start > "$FRONTEND_LOG" 2>&1 &
@@ -570,6 +607,10 @@ main() {
                 SKIP_CHECKS=true
                 shift
                 ;;
+            -l|--lan)
+                LAN_MODE=true
+                shift
+                ;;
             --force)
                 FORCE_CLEANUP=true
                 shift
@@ -624,9 +665,24 @@ main() {
             log "INFO" "UDBM 项目启动完成!"
             echo ""
             echo -e "${GREEN}访问地址:${NC}"
-            echo -e "  前端: http://localhost:$FRONTEND_PORT"
-            echo -e "  后端API: http://localhost:$BACKEND_PORT"
-            echo -e "  API文档: http://localhost:$BACKEND_PORT/docs"
+            
+            if [ "$LAN_MODE" = true ]; then
+                local local_ip=$(get_local_ip)
+                echo -e "  前端: http://localhost:$FRONTEND_PORT (本机)"
+                echo -e "  前端: http://$local_ip:$FRONTEND_PORT (局域网)"
+                echo -e "  后端API: http://localhost:$BACKEND_PORT (本机)"
+                echo -e "  后端API: http://$local_ip:$BACKEND_PORT (局域网)"
+                echo -e "  API文档: http://localhost:$BACKEND_PORT/docs (本机)"
+                echo -e "  API文档: http://$local_ip:$BACKEND_PORT/docs (局域网)"
+                echo ""
+                echo -e "${YELLOW}局域网访问说明:${NC}"
+                echo -e "  同事可以通过 http://$local_ip:$FRONTEND_PORT 访问前端"
+                echo -e "  确保防火墙允许端口 $FRONTEND_PORT 和 $BACKEND_PORT 的访问"
+            else
+                echo -e "  前端: http://localhost:$FRONTEND_PORT"
+                echo -e "  后端API: http://localhost:$BACKEND_PORT"
+                echo -e "  API文档: http://localhost:$BACKEND_PORT/docs"
+            fi
             ;;
         "stop")
             log "INFO" "停止 UDBM 项目..."

@@ -13,7 +13,6 @@ import {
   BarChartOutlined,
   SearchOutlined,
   SecurityScanOutlined,
-  TableOutlined,
   MenuOutlined
 } from '@ant-design/icons';
 
@@ -27,6 +26,7 @@ import SlowQueryAnalysis from './pages/SlowQueryAnalysis';
 import IndexOptimization from './pages/IndexOptimization';
 import SystemDiagnosis from './pages/SystemDiagnosis';
 import ExecutionPlanAnalysis from './pages/ExecutionPlanAnalysis';
+import LockAnalysisPage from './pages/LockAnalysisPage';
 
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -45,6 +45,7 @@ const DynamicBreadcrumb = () => {
       '/performance/index-optimization': [{ title: 'UDBM' }, { title: '性能调优' }, { title: '索引优化' }],
       '/performance/execution-plan-analysis': [{ title: 'UDBM' }, { title: '性能调优' }, { title: '执行计划分析' }],
       '/performance/system-diagnosis': [{ title: 'UDBM' }, { title: '性能调优' }, { title: '系统诊断' }],
+      '/performance/lock-analysis': [{ title: 'UDBM' }, { title: '性能调优' }, { title: '锁分析' }],
       '/monitoring': [{ title: 'UDBM' }, { title: '监控告警' }],
       '/backup': [{ title: 'UDBM' }, { title: '备份恢复' }],
       '/admin': [{ title: 'UDBM' }, { title: '系统管理' }],
@@ -110,6 +111,7 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
       '7': '/performance/index-optimization',
       '8': '/performance/execution-plan-analysis',
       '9': '/performance/system-diagnosis',
+      '10': '/performance/lock-analysis',
       '11': '/monitoring',
       '12': '/monitoring',
       '13': '/monitoring',
@@ -143,6 +145,7 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
       '/performance/index-optimization': ['7'],
       '/performance/execution-plan-analysis': ['8'],
       '/performance/system-diagnosis': ['9'],
+      '/performance/lock-analysis': ['10'],
       '/monitoring': ['11'],
       '/backup': ['14'],
       '/admin': ['17'],
@@ -219,8 +222,9 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
             <Menu.Item key="5" icon={<BarChartOutlined />}>性能监控</Menu.Item>
             <Menu.Item key="6" icon={<SearchOutlined />}>慢查询分析</Menu.Item>
             <Menu.Item key="7" icon={<DatabaseOutlined />}>索引优化</Menu.Item>
-            <Menu.Item key="8" icon={<TableOutlined />}>执行计划分析</Menu.Item>
+            <Menu.Item key="8" icon={<DatabaseOutlined />}>执行计划分析</Menu.Item>
             <Menu.Item key="9" icon={<SecurityScanOutlined />}>系统诊断</Menu.Item>
+            <Menu.Item key="10" icon={<DatabaseOutlined />}>锁分析</Menu.Item>
           </SubMenu>
           <SubMenu key="sub3" icon={<PieChartOutlined />} title="监控告警">
             <Menu.Item key="11">监控面板</Menu.Item>
@@ -344,6 +348,7 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
               <Route path="/performance/index-optimization" element={<IndexOptimization />} />
               <Route path="/performance/execution-plan-analysis" element={<ExecutionPlanAnalysis />} />
               <Route path="/performance/system-diagnosis" element={<SystemDiagnosis />} />
+              <Route path="/performance/lock-analysis" element={<LockAnalysisPage />} />
             </Routes>
           </div>
         </Content>

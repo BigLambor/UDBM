@@ -13,7 +13,6 @@ import {
   SyncOutlined, RocketOutlined, FileTextOutlined, DownloadOutlined,
   TrophyOutlined, BugOutlined, FireOutlined
 } from '@ant-design/icons';
-
 import { Line, Bar, Pie } from '@ant-design/charts';
 
 import { performanceAPI } from '../services/api';

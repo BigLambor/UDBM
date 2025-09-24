@@ -42,9 +42,12 @@ const DatabaseList = () => {
   const fetchDatabases = async () => {
     setLoading(true);
     try {
+      console.log('开始获取数据库列表...');
       const response = await databaseAPI.getDatabases();
+      console.log('API响应:', response);
       // 后端返回格式: 直接返回数据库实例数组
       const data = Array.isArray(response) ? response : [];
+      console.log('处理后的数据:', data);
       setDatabases(data);
     } catch (error) {
       console.error('获取数据库列表失败:', error);

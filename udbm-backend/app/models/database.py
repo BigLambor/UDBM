@@ -58,6 +58,13 @@ class DatabaseInstance(Base, TimestampMixin, UserMixin):
     execution_plans = relationship("ExecutionPlan", back_populates="database")
     tuning_tasks = relationship("TuningTask", back_populates="database")
     system_diagnoses = relationship("SystemDiagnosis", back_populates="database")
+    
+    # 锁分析相关关系
+    lock_events = relationship("LockEvent", back_populates="database")
+    lock_wait_chains = relationship("LockWaitChain", back_populates="database")
+    lock_contentions = relationship("LockContention", back_populates="database")
+    lock_optimization_tasks = relationship("LockOptimizationTask", back_populates="database")
+    lock_analysis_reports = relationship("LockAnalysisReport", back_populates="database")
 
 
 

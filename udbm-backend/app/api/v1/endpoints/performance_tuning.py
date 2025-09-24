@@ -459,6 +459,211 @@ async def get_tuning_tasks(
                         tasks.append(task)
                     
                     return tasks
+            elif db_type == "oceanbase":
+                # 对于OceanBase，生成Mock调优任务数据
+                import random
+                from datetime import datetime, timedelta
+                
+                # 使用数据库ID作为随机种子确保一致性
+                random.seed(database_id)
+                
+                # OceanBase特有的任务类型和描述
+                task_templates = [
+                    {
+                        "task_type": "index_creation",
+                        "task_name": "为表 {table} 创建 {index_type} 索引",
+                        "description": "基于OceanBase查询分析，为{table}表的{columns}字段创建{index_type}索引，预计提升{improvement}%查询性能",
+                        "execution_sql": "CREATE INDEX idx_{table}_{columns_str} ON {table}({columns_str});",
+                        "priority_range": (3, 5)
+                    },
+                    {
+                        "task_type": "query_rewrite",
+                        "task_name": "优化 {table} 表查询性能",
+                        "description": "重写{table}表的低效查询，优化JOIN条件和WHERE子句，提升查询执行效率",
+                        "execution_sql": "-- 查询重写建议\n-- 原查询: {original_query}\n-- 优化后: {optimized_query}",
+                        "priority_range": (2, 4)
+                    },
+                    {
+                        "task_type": "config_tuning",
+                        "task_name": "OceanBase 配置参数优化",
+                        "description": "调整OceanBase租户配置参数，优化内存分配和并发设置",
+                        "execution_sql": "ALTER SYSTEM SET {param_name} = '{param_value}';",
+                        "priority_range": (4, 5)
+                    },
+                    {
+                        "task_type": "compaction_optimization",
+                        "task_name": "合并任务优化",
+                        "description": "优化Major Compaction策略，减少对业务的影响，提升存储效率",
+                        "execution_sql": "ALTER SYSTEM SET major_compaction_schedule = '{schedule}';",
+                        "priority_range": (2, 3)
+                    },
+                    {
+                        "task_type": "statistics_update",
+                        "task_name": "更新 {table} 表统计信息",
+                        "description": "更新{table}表的统计信息，确保查询优化器能做出正确的执行计划选择",
+                        "execution_sql": "CALL DBMS_STATS.GATHER_TABLE_STATS('{schema}', '{table}');",
+                        "priority_range": (1, 3)
+                    }
+                ]
+                
+                # OceanBase表名
+                oceanbase_tables = ["users", "products", "orders", "order_items", "categories", "inventory_movements", "audit_logs"]
+                
+                tasks = []
+                task_id = 1
+                
+                # 生成任务
+                for _ in range(min(limit, 15)):  # 最多生成15个任务
+                    template = random.choice(task_templates)
+                    table = random.choice(oceanbase_tables)
+                    
+                    # 生成任务名称和描述
+                    if "{table}" in template["task_name"] and "{index_type}" in template["task_name"]:
+                        index_type = random.choice(["BTREE", "HASH", "FULLTEXT"])
+                        task_name = template["task_name"].format(table=table, index_type=index_type)
+                    elif "{table}" in template["task_name"]:
+                        task_name = template["task_name"].format(table=table)
+                    else:
+                        task_name = template["task_name"]
+                    
+                    if "{table}" in template["description"] and "{index_type}" in template["description"]:
+                        columns = random.choice(["id", "created_at", "status", "user_id", "name"])
+                        improvement = random.randint(40, 85)
+                        index_type = random.choice(["BTREE", "HASH", "FULLTEXT"])
+                        description = template["description"].format(
+                            table=table, 
+                            columns=columns, 
+                            index_type=index_type,
+                            improvement=improvement
+                        )
+                    elif "{table}" in template["description"]:
+                        columns = random.choice(["id", "created_at", "status", "user_id", "name"])
+                        improvement = random.randint(40, 85)
+                        description = template["description"].format(
+                            table=table, 
+                            columns=columns, 
+                            improvement=improvement
+                        )
+                    else:
+                        description = template["description"]
+                    
+                    # 生成执行SQL
+                    if "{table}" in template["execution_sql"]:
+                        columns_str = random.choice(["id", "created_at", "status", "user_id"])
+                        execution_sql = template["execution_sql"].format(
+                            table=table,
+                            columns_str=columns_str,
+                            schema="udbm_oceanbase_demo"
+                        )
+                    elif "{param_name}" in template["execution_sql"]:
+                        params = [
+                            ("plan_cache_mem_limit", "4G"),
+                            ("major_compaction_schedule", "02:00-06:00"),
+                            ("compaction_concurrency", "4"),
+                            ("tenant_memory_limit", "32G")
+                        ]
+                        param_name, param_value = random.choice(params)
+                        execution_sql = template["execution_sql"].format(
+                            param_name=param_name,
+                            param_value=param_value
+                        )
+                    elif "{schedule}" in template["execution_sql"]:
+                        schedules = ["02:00-06:00", "01:00-05:00", "03:00-07:00"]
+                        execution_sql = template["execution_sql"].format(schedule=random.choice(schedules))
+                    else:
+                        execution_sql = template["execution_sql"]
+                    
+                    # 生成状态
+                    statuses = ["pending", "running", "completed", "failed"]
+                    status_weights = [0.4, 0.1, 0.4, 0.1]  # 40%待处理，10%执行中，40%已完成，10%失败
+                    task_status = random.choices(statuses, weights=status_weights)[0]
+                    
+                    # 生成优先级
+                    priority = random.randint(*template["priority_range"])
+                    
+                    # 生成时间
+                    created_at = datetime.now() - timedelta(days=random.randint(1, 30))
+                    if task_status == "completed":
+                        started_at = created_at + timedelta(minutes=random.randint(5, 60))
+                        completed_at = started_at + timedelta(minutes=random.randint(10, 120))
+                        execution_result = "任务执行成功，性能提升显著"
+                    elif task_status == "running":
+                        started_at = created_at + timedelta(minutes=random.randint(5, 60))
+                        completed_at = None
+                        execution_result = "任务正在执行中..."
+                    elif task_status == "failed":
+                        started_at = created_at + timedelta(minutes=random.randint(5, 60))
+                        completed_at = started_at + timedelta(minutes=random.randint(1, 10))
+                        execution_result = None
+                    else:  # pending
+                        started_at = None
+                        completed_at = None
+                        execution_result = None
+                    
+                    # 根据任务类型生成不同的配置
+                    if template["task_type"] == "index_creation":
+                        task_config = {
+                            "table_name": table,
+                            "index_type": random.choice(["BTREE", "HASH", "FULLTEXT"]),
+                            "columns": [random.choice(["id", "created_at", "status", "user_id"])],
+                            "estimated_duration": random.randint(10, 120)
+                        }
+                    elif template["task_type"] == "query_rewrite":
+                        task_config = {
+                            "table_name": table,
+                            "estimated_duration": random.randint(5, 30)
+                        }
+                    elif template["task_type"] == "config_tuning":
+                        task_config = {
+                            "parameter_name": random.choice(["plan_cache_mem_limit", "major_compaction_schedule", "compaction_concurrency"]),
+                            "estimated_duration": random.randint(2, 10)
+                        }
+                    elif template["task_type"] == "compaction_optimization":
+                        task_config = {
+                            "estimated_duration": random.randint(15, 60)
+                        }
+                    elif template["task_type"] == "statistics_update":
+                        task_config = {
+                            "table_name": table,
+                            "estimated_duration": random.randint(5, 20)
+                        }
+                    else:
+                        task_config = {
+                            "estimated_duration": random.randint(10, 120)
+                        }
+                    
+                    task = {
+                        "id": task_id,
+                        "database_id": database_id,
+                        "task_type": template["task_type"],
+                        "task_name": task_name,
+                        "description": description,
+                        "task_config": task_config,
+                        "execution_sql": execution_sql,
+                        "status": task_status,
+                        "priority": priority,
+                        "execution_result": execution_result,
+                        "error_message": "连接超时" if task_status == "failed" else None,
+                        "scheduled_at": created_at + timedelta(minutes=random.randint(1, 60)),
+                        "started_at": started_at.isoformat() if started_at else None,
+                        "completed_at": completed_at.isoformat() if completed_at else None,
+                        "related_suggestion_id": random.randint(1, 20),
+                        "created_by": random.randint(1, 5),
+                        "created_at": created_at.isoformat(),
+                        "updated_at": (completed_at or started_at or created_at).isoformat(),
+                        "source": "oceanbase_mock_data"
+                    }
+                    tasks.append(task)
+                    task_id += 1
+                
+                # 按创建时间降序排序
+                tasks.sort(key=lambda x: x["created_at"], reverse=True)
+                
+                # 应用状态过滤
+                if status:
+                    tasks = [t for t in tasks if t["status"] == status]
+                
+                return tasks
             else:
                 # 对于PostgreSQL，使用原有逻辑
                 session = get_db_session(db)
@@ -592,6 +797,7 @@ async def get_index_suggestions(
         
         # 检查数据库类型
         db_type = get_database_type_name(get_sync_db_session(), database_id)
+        print(f"DEBUG: Database ID {database_id}, Type: {db_type}")  # 调试信息
         
         if db_type == "mysql":
             # 对于MySQL，使用pymysql直接连接
@@ -695,6 +901,97 @@ async def get_index_suggestions(
                     return suggestions
             finally:
                 connection.close()
+        elif db_type == "oceanbase":
+            # 对于OceanBase，生成Mock索引建议数据
+            import random
+            from datetime import datetime, timedelta
+            
+            # 使用数据库ID作为随机种子确保一致性
+            random.seed(database_id)
+            
+            # OceanBase特有的表名和索引建议
+            oceanbase_tables = [
+                {"name": "users", "columns": ["username", "email", "created_at", "department"], "common_queries": ["按用户名查询", "按邮箱查询", "按创建时间排序"]},
+                {"name": "products", "columns": ["name", "price", "category_id", "status", "created_at"], "common_queries": ["按价格筛选", "按分类查询", "按状态筛选"]},
+                {"name": "orders", "columns": ["user_id", "status", "created_at", "total_amount"], "common_queries": ["用户订单查询", "按状态筛选", "按时间范围查询"]},
+                {"name": "order_items", "columns": ["order_id", "product_id", "quantity"], "common_queries": ["订单详情查询", "产品销量统计"]},
+                {"name": "categories", "columns": ["name", "parent_id", "level"], "common_queries": ["分类层级查询", "按父分类查询"]},
+                {"name": "inventory_movements", "columns": ["product_id", "movement_type", "created_at"], "common_queries": ["库存变动查询", "按时间范围统计"]},
+                {"name": "audit_logs", "columns": ["user_id", "action", "table_name", "created_at"], "common_queries": ["用户操作日志", "按表名查询", "按时间清理"]}
+            ]
+            
+            suggestions = []
+            suggestion_id = 1
+            
+            for table in oceanbase_tables:
+                # 为每个表生成1-3个索引建议
+                num_suggestions = random.randint(1, 3)
+                for _ in range(num_suggestions):
+                    # 随机选择列
+                    selected_columns = random.sample(table["columns"], random.randint(1, min(3, len(table["columns"]))))
+                    
+                    # 生成索引类型
+                    index_types = ["BTREE", "HASH", "FULLTEXT"]
+                    index_type = random.choice(index_types)
+                    
+                    # 生成影响评分
+                    impact_score = random.randint(60, 95)
+                    
+                    # 生成建议原因
+                    reason_templates = [
+                        f"检测到{table['name']}表频繁使用{', '.join(selected_columns)}字段进行查询，但缺少相应索引。",
+                        f"分析发现{table['name']}表的{selected_columns[0]}字段查询性能较差，建议创建索引优化。",
+                        f"系统监控显示{table['name']}表在{', '.join(selected_columns)}字段上的查询存在性能瓶颈。",
+                        f"基于查询模式分析，{table['name']}表需要为{', '.join(selected_columns)}字段创建复合索引。"
+                    ]
+                    
+                    # 生成预期改善
+                    improvement_templates = [
+                        f"预计查询性能提升{random.randint(50, 85)}%，响应时间显著减少",
+                        f"预计索引扫描替代全表扫描，性能提升{random.randint(60, 90)}%",
+                        f"预计查询优化器能更好地选择执行计划，提升{random.randint(40, 75)}%性能",
+                        f"预计减少{random.randint(70, 95)}%的磁盘I/O操作"
+                    ]
+                    
+                    # 生成状态
+                    statuses = ["pending", "applied", "rejected"]
+                    status_weights = [0.7, 0.2, 0.1]  # 70%待处理，20%已应用，10%已拒绝
+                    status = random.choices(statuses, weights=status_weights)[0]
+                    
+                    # 生成时间
+                    created_at = datetime.now() - timedelta(days=random.randint(1, 30))
+                    updated_at = created_at + timedelta(hours=random.randint(1, 24)) if status != "pending" else created_at
+                    
+                    suggestion = {
+                        "id": suggestion_id,
+                        "database_id": database_id,
+                        "table_name": table["name"],
+                        "column_names": selected_columns,
+                        "index_type": index_type,
+                        "suggestion_type": "performance_optimization",
+                        "reason": random.choice(reason_templates) + " (OceanBase AI分析)",
+                        "impact_score": impact_score,
+                        "estimated_improvement": random.choice(improvement_templates) + " (OceanBase AI预测)",
+                        "status": status,
+                        "applied_at": updated_at if status == "applied" else None,
+                        "applied_by": random.randint(1, 5) if status == "applied" else None,
+                        "related_query_ids": [random.randint(1000, 9999) for _ in range(random.randint(1, 3))],
+                        "created_at": created_at.isoformat(),
+                        "updated_at": updated_at.isoformat(),
+                        "source": "oceanbase_mock_data"
+                    }
+                    suggestions.append(suggestion)
+                    suggestion_id += 1
+            
+            # 按影响评分降序排序
+            suggestions.sort(key=lambda x: x["impact_score"], reverse=True)
+            
+            # 应用状态过滤
+            if status:
+                suggestions = [s for s in suggestions if s["status"] == status]
+            
+            # 应用限制
+            return suggestions[:limit]
         else:
             # 对于PostgreSQL，使用原有逻辑
             session = get_db_session(db)

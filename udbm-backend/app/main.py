@@ -48,10 +48,21 @@ def create_application() -> FastAPI:
         debug=True,  # 启用调试模式
     )
 
-    # 设置CORS
+    # 设置CORS - 支持局域网访问
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000"],
+        allow_origins=[
+            "http://localhost:3000", 
+            "http://localhost:3001", 
+            "http://127.0.0.1:3000",
+            "http://0.0.0.0:3000",
+            # 支持局域网访问 - 允许所有192.168.x.x和10.x.x.x网段
+            "http://192.168.0.0/16",
+            "http://10.0.0.0/8",
+            "http://172.16.0.0/12",
+            # 支持所有来源（开发环境）
+            "*"
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

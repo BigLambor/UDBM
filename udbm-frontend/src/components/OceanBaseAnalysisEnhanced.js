@@ -828,7 +828,7 @@ ALTER TABLE cold_table DROP PARTITION p_old;`;
                 <Statistic
                   title="分区表总数"
                   value={partitionAnalysis.summary.total_partition_tables}
-                  prefix={<TableOutlined />}
+                  prefix={<DatabaseOutlined />}
                   valueStyle={{ color: '#1890ff' }}
                 />
               </Card>

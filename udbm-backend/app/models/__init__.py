@@ -7,6 +7,10 @@ from .performance_tuning import (
     SlowQuery, PerformanceMetric, IndexSuggestion, ExecutionPlan,
     TuningTask, SystemDiagnosis
 )
+from .lock_analysis import (
+    LockEvent, LockWaitChain, LockContention, 
+    LockOptimizationTask, LockAnalysisReport
+)
 # from .monitoring import MetricDefinition, Metric, AlertRule, Alert
 
 # 导入所有模型到__all__
@@ -15,5 +19,7 @@ __all__ = [
     "DatabaseType", "DatabaseInstance", "DatabaseGroup", "DatabaseGroupMember",
     "SlowQuery", "PerformanceMetric", "IndexSuggestion", "ExecutionPlan",
     "TuningTask", "SystemDiagnosis",
+    "LockEvent", "LockWaitChain", "LockContention", 
+    "LockOptimizationTask", "LockAnalysisReport",
     "MetricDefinition", "Metric", "AlertRule", "Alert"
 ]

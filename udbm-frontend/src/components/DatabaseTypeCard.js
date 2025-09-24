@@ -34,7 +34,7 @@ const DATABASE_TYPE_CONFIG = {
     color: '#3b82f6',
     gradient: 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)',
     description: '分布式云原生数据库',
-    features: ['高可用', '水平扩展', 'MySQL/Oracle兼容']
+    features: ['高可用', '水平扩展', 'MySQL/Oracle语法兼容']
   },
   mongodb: {
     name: 'MongoDB',

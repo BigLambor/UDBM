@@ -9,6 +9,13 @@ const api = axios.create({
   },
 });
 
+// 调试信息：输出API配置
+console.log('API Configuration:', {
+  baseURL: process.env.REACT_APP_API_BASE_URL || '/api/v1',
+  env: process.env.REACT_APP_API_BASE_URL,
+  NODE_ENV: process.env.NODE_ENV
+});
+
 // 请求拦截器
 api.interceptors.request.use(
   config => {
