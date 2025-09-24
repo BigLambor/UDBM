@@ -45,7 +45,11 @@ class Settings(BaseSettings):
 
     @property
     def get_database_uri(self) -> str:
-        """获取数据库连接URI，优先使用PostgreSQL"""
+        """获取数据库连接URI，优先使用PostgreSQL，如果不可用则使用SQLite"""
+        # For testing, use SQLite when PostgreSQL is not available
+        import os
+        if os.environ.get("USE_SQLITE", "false").lower() == "true":
+            return "sqlite+aiosqlite:///./udbm.db"
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
     # 数据库连接池配置

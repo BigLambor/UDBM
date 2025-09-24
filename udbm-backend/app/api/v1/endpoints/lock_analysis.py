@@ -22,7 +22,7 @@ from app.schemas.lock_analysis import (
 from app.services.performance_tuning.lock_analyzer import LockAnalyzer
 from app.services.performance_tuning.lock_analyzer_providers import get_lock_analyzer_by_type
 from app.services.db_providers.registry import get_provider, get_database_type_name
-from app.models.database import Database
+from app.models.database import DatabaseInstance
 
 router = APIRouter()
 
@@ -55,7 +55,7 @@ async def get_lock_dashboard(
     try:
         # 获取数据库信息
         session = get_sync_db_session()
-        database = session.query(Database).filter(Database.id == database_id).first()
+        database = session.query(DatabaseInstance).filter(DatabaseInstance.id == database_id).first()
         
         if not database:
             raise HTTPException(status_code=404, detail="数据库不存在")
@@ -93,7 +93,7 @@ async def analyze_locks(
     try:
         # 获取数据库信息
         session = get_sync_db_session()
-        database = session.query(Database).filter(Database.id == database_id).first()
+        database = session.query(DatabaseInstance).filter(DatabaseInstance.id == database_id).first()
         
         if not database:
             raise HTTPException(status_code=404, detail="数据库不存在")
