@@ -222,9 +222,9 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
             <Menu.Item key="5" icon={<BarChartOutlined />}>性能监控</Menu.Item>
             <Menu.Item key="6" icon={<SearchOutlined />}>慢查询分析</Menu.Item>
             <Menu.Item key="7" icon={<DatabaseOutlined />}>索引优化</Menu.Item>
-            <Menu.Item key="8" icon={<DatabaseOutlined />}>执行计划分析</Menu.Item>
-            <Menu.Item key="9" icon={<SecurityScanOutlined />}>系统诊断</Menu.Item>
             <Menu.Item key="10" icon={<DatabaseOutlined />}>锁分析</Menu.Item>
+            <Menu.Item key="8" icon={<DatabaseOutlined />}>执行计划分析</Menu.Item>
+            <Menu.Item key="9" icon={<SecurityScanOutlined />}>系统诊断</Menu.Item>         
           </SubMenu>
           <SubMenu key="sub3" icon={<PieChartOutlined />} title="监控告警">
             <Menu.Item key="11">监控面板</Menu.Item>
