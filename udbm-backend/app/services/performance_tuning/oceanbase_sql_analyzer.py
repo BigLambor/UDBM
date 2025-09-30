@@ -314,20 +314,53 @@ class OceanBaseSQLAnalyzer:
     def _get_top_slow_queries(self, slow_queries: List[SQLAuditRecord], limit: int) -> List[Dict[str, Any]]:
         """获取最慢的查询"""
         top_queries = []
-        for query in slow_queries[:limit]:
+        for i, query in enumerate(slow_queries[:limit]):
             top_queries.append({
-                "sql_id": query.sql_id,
-                "query_sql": query.query_sql,
-                "elapsed_time": query.elapsed_time,
+                "id": i + 1,
+                "database_id": 1,  # 将在上层设置
+                "query_hash": query.sql_id,
+                "query_text": query.query_sql,
+                "execution_time": query.elapsed_time,
+                "lock_time": query.queue_time,
+                "rows_sent": query.rows_returned,
+                "rows_examined": query.logical_reads,  # 使用逻辑读取数作为检查行数
+                "user_host": f"{query.user_name}@{query.module}",
+                "sql_command": self._extract_sql_command(query.query_sql),
+                "timestamp": query.request_time.isoformat(),
+                "source": "oceanbase_gv_sql_audit",
                 "cpu_time": query.cpu_time,
                 "physical_reads": query.physical_reads,
                 "logical_reads": query.logical_reads,
-                "rows_returned": query.rows_returned,
+                "mem_used": query.mem_used,
                 "execution_count": random.randint(1, 100),
                 "avg_elapsed_time": query.elapsed_time,
                 "optimization_potential": self._calculate_optimization_potential(query)
             })
         return top_queries
+    
+    def _extract_sql_command(self, query_text: str) -> str:
+        """提取SQL命令类型"""
+        if not query_text:
+            return "UNKNOWN"
+        
+        query_upper = query_text.strip().upper()
+        
+        if query_upper.startswith('SELECT'):
+            return "SELECT"
+        elif query_upper.startswith('INSERT'):
+            return "INSERT"
+        elif query_upper.startswith('UPDATE'):
+            return "UPDATE"
+        elif query_upper.startswith('DELETE'):
+            return "DELETE"
+        elif query_upper.startswith('CREATE'):
+            return "CREATE"
+        elif query_upper.startswith('ALTER'):
+            return "ALTER"
+        elif query_upper.startswith('DROP'):
+            return "DROP"
+        else:
+            return "OTHER"
     
     def _analyze_performance_patterns(self, slow_queries: List[SQLAuditRecord]) -> Dict[str, Any]:
         """分析性能模式"""

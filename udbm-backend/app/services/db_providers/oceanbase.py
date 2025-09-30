@@ -288,11 +288,37 @@ class _OBSlowQueries:
     def patterns(self, database_id: int, days: int = 7) -> Dict[str, Any]:
         # 使用SQL分析器获取模式分析
         trends = self._sql_analyzer.analyze_sql_performance_trends(database_id, days)
+        daily_stats = trends.get("daily_stats", [])
+        performance_patterns = trends.get("performance_patterns", {})
+        
+        # 格式化 most_common_patterns
+        common_operations = performance_patterns.get("common_operations", {})
+        most_common_patterns = []
+        for op_type, count in common_operations.items():
+            # 从 daily_stats 中计算该操作类型的平均执行时间
+            avg_time = sum(day.get("avg_elapsed_time", 0) for day in daily_stats) / max(1, len(daily_stats))
+            most_common_patterns.append({
+                "pattern": op_type,
+                "count": count,
+                "avg_time": round(avg_time, 2)
+            })
+        
+        # 格式化 top_tables
+        table_access_patterns = performance_patterns.get("table_access_patterns", {})
+        top_tables = []
+        for table, count in sorted(table_access_patterns.items(), key=lambda x: x[1], reverse=True)[:10]:
+            avg_time = sum(day.get("avg_elapsed_time", 0) for day in daily_stats) / max(1, len(daily_stats))
+            top_tables.append({
+                "table": table,
+                "query_count": count,
+                "avg_time": round(avg_time, 2)
+            })
+        
         return {
-            "total_slow_queries": sum(day["slow_queries"] for day in trends.get("daily_stats", [])),
-            "avg_execution_time": sum(day["avg_elapsed_time"] for day in trends.get("daily_stats", [])) / max(1, len(trends.get("daily_stats", []))),
-            "most_common_patterns": trends.get("performance_patterns", {}).get("common_operations", {}),
-            "top_tables": list(trends.get("performance_patterns", {}).get("table_access_patterns", {}).keys())[:10]
+            "total_slow_queries": sum(day["slow_queries"] for day in daily_stats),
+            "avg_execution_time": round(sum(day["avg_elapsed_time"] for day in daily_stats) / max(1, len(daily_stats)), 2),
+            "most_common_patterns": most_common_patterns,
+            "top_tables": top_tables
         }
 
     def statistics(self, database_id: int, days: int = 7) -> Dict[str, Any]:
