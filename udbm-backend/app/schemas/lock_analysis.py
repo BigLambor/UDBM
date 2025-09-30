@@ -1,7 +1,7 @@
 """
 数据库锁分析相关Schema
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
@@ -135,6 +135,30 @@ class LockAnalysisReportResponse(BaseModel):
     recommendations: Optional[List[str]] = None
     created_at: datetime
     updated_at: datetime
+
+    @field_validator('hot_objects', mode='before')
+    @classmethod
+    def parse_hot_objects(cls, v):
+        if isinstance(v, str):
+            import json
+            return json.loads(v) if v else None
+        return v
+
+    @field_validator('report_content', mode='before')
+    @classmethod
+    def parse_report_content(cls, v):
+        if isinstance(v, str):
+            import json
+            return json.loads(v)
+        return v
+
+    @field_validator('recommendations', mode='before')
+    @classmethod
+    def parse_recommendations(cls, v):
+        if isinstance(v, str):
+            import json
+            return json.loads(v) if v else None
+        return v
 
     class Config:
         from_attributes = True

@@ -43,6 +43,10 @@ const OceanBaseAnalysisEnhanced = ({ databaseId, embedded = false }) => {
   const [configAnalysis, setConfigAnalysis] = useState(null);
   const [optimizationScript, setOptimizationScript] = useState('');
   const [scriptModalVisible, setScriptModalVisible] = useState(false);
+  
+  // SQL详情状态
+  const [selectedQuery, setSelectedQuery] = useState(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
 
   useEffect(() => {
     if (databaseId) {
@@ -512,6 +516,12 @@ ALTER TABLE cold_table DROP PARTITION p_old;`;
     );
   };
 
+  // 处理查看SQL详情
+  const handleViewDetail = (record) => {
+    setSelectedQuery(record);
+    setDetailModalVisible(true);
+  };
+
   // 渲染SQL分析标签页
   const renderSqlAnalysis = () => {
     const columns = [
@@ -520,7 +530,12 @@ ALTER TABLE cold_table DROP PARTITION p_old;`;
         dataIndex: 'sql_id',
         key: 'sql_id',
         width: 120,
-        render: (text) => <Text code>{text}</Text>,
+        ellipsis: true,
+        render: (text) => (
+          <Tooltip title={text}>
+            <Text code>{text ? text.substring(0, 8) + '...' : '-'}</Text>
+          </Tooltip>
+        ),
       },
       {
         title: '执行时间',
@@ -546,7 +561,7 @@ ALTER TABLE cold_table DROP PARTITION p_old;`;
         dataIndex: 'physical_reads',
         key: 'physical_reads',
         width: 100,
-        render: (value) => value.toLocaleString(),
+        render: (value) => value?.toLocaleString() || 0,
       },
       {
         title: '优化潜力',
@@ -564,7 +579,12 @@ ALTER TABLE cold_table DROP PARTITION p_old;`;
         key: 'action',
         width: 100,
         render: (_, record) => (
-          <Button type="link" size="small" icon={<FileSearchOutlined />}>
+          <Button 
+            type="link" 
+            size="small" 
+            icon={<FileSearchOutlined />}
+            onClick={() => handleViewDetail(record)}
+          >
             详情
           </Button>
         ),
@@ -1249,6 +1269,103 @@ ALTER TABLE cold_table DROP PARTITION p_old;`;
           rows={20}
           style={{ fontFamily: 'monospace', fontSize: '12px' }}
         />
+      </Modal>
+
+      {/* SQL详情模态框 */}
+      <Modal
+        title="SQL详情"
+        visible={detailModalVisible}
+        onCancel={() => setDetailModalVisible(false)}
+        width={900}
+        footer={[
+          <Button key="close" onClick={() => setDetailModalVisible(false)}>
+            关闭
+          </Button>,
+        ]}
+      >
+        {selectedQuery && (
+          <div>
+            <Descriptions column={2} bordered size="small" style={{ marginBottom: 16 }}>
+              <Descriptions.Item label="SQL ID" span={2}>
+                <Text code>{selectedQuery.sql_id}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="执行时间">
+                <span style={{ color: selectedQuery.elapsed_time > 5 ? '#ff4d4f' : '#52c41a' }}>
+                  {(selectedQuery.elapsed_time || 0).toFixed(3)}s
+                </span>
+              </Descriptions.Item>
+              <Descriptions.Item label="CPU时间">
+                {(selectedQuery.cpu_time || 0).toFixed(3)}s
+              </Descriptions.Item>
+              <Descriptions.Item label="物理读">
+                {selectedQuery.physical_reads?.toLocaleString() || 0}
+              </Descriptions.Item>
+              <Descriptions.Item label="逻辑读">
+                {selectedQuery.logical_reads?.toLocaleString() || 0}
+              </Descriptions.Item>
+              <Descriptions.Item label="检查行数">
+                {selectedQuery.rows_examined?.toLocaleString() || 0}
+              </Descriptions.Item>
+              <Descriptions.Item label="返回行数">
+                {selectedQuery.rows_sent?.toLocaleString() || 0}
+              </Descriptions.Item>
+              <Descriptions.Item label="内存使用">
+                {selectedQuery.mem_used ? `${(selectedQuery.mem_used / 1024 / 1024).toFixed(2)} MB` : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="执行次数">
+                {selectedQuery.execution_count || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="用户/主机">
+                {selectedQuery.user_host || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="SQL命令">
+                <Tag color="blue">{selectedQuery.sql_command}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="优化潜力">
+                <Tag color={selectedQuery.optimization_potential === 'high' ? 'red' : 'orange'}>
+                  {selectedQuery.optimization_potential === 'high' ? '高' : '中'}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="执行计划ID">
+                {selectedQuery.plan_id || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="查询时间">
+                {selectedQuery.timestamp ? new Date(selectedQuery.timestamp).toLocaleString() : '-'}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Divider>SQL语句</Divider>
+            <div style={{
+              background: '#f5f5f5',
+              padding: '12px',
+              borderRadius: '4px',
+              border: '1px solid #d9d9d9',
+              maxHeight: '300px',
+              overflow: 'auto'
+            }}>
+              <pre style={{
+                margin: 0,
+                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                fontSize: '13px',
+                lineHeight: '1.6',
+                whiteSpace: 'pre-wrap',
+                wordWrap: 'break-word'
+              }}>
+                {selectedQuery.query_text || '无SQL内容'}
+              </pre>
+            </div>
+
+            {selectedQuery.optimization_potential === 'high' && (
+              <Alert
+                message="优化建议"
+                description="该查询存在较大的优化空间，建议检查索引使用情况和查询逻辑。"
+                type="warning"
+                showIcon
+                style={{ marginTop: 16 }}
+              />
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );

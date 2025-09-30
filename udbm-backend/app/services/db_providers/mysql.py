@@ -399,7 +399,7 @@ class _MySQLSlowQueries:
         """获取MySQL数据库连接"""
         from sqlalchemy import create_engine
         return create_engine(
-            f"mysql+pymysql://udbm_mysql_user:udbm_mysql_password@localhost:3306/udbm_mysql_demo",
+            f"mysql+pymysql://root:udbm_root_password@localhost:3306/udbm_mysql_demo",
             echo=False
         )
 
@@ -414,7 +414,7 @@ class _MySQLSlowQueries:
         
         # 创建MySQL连接
         mysql_engine = create_engine(
-            f"mysql+pymysql://udbm_mysql_user:udbm_mysql_password@localhost:3306/udbm_mysql_demo",
+            f"mysql+pymysql://root:udbm_root_password@localhost:3306/udbm_mysql_demo",
             echo=False
         )
         
@@ -480,7 +480,217 @@ class _MySQLSlowQueries:
         return {"query_analysis": {"complexity_score": 50, "efficiency_score": 60, "performance_rating": "fair"}, "suggestions": suggestions[:5], "priority_score": 70, "estimated_improvement": "50%"}
 
     def patterns(self, database_id: int, days: int = 7) -> Dict[str, Any]:
-        return {"total_slow_queries": 0, "avg_execution_time": 0.0, "most_common_patterns": [], "top_tables": [], "recommendations": ["开启performance_schema"]}
+        """分析MySQL慢查询模式和热点表"""
+        from sqlalchemy import create_engine, text
+        from datetime import datetime, timedelta
+        import re
+        from collections import defaultdict
+        
+        # 创建MySQL连接
+        mysql_engine = create_engine(
+            f"mysql+pymysql://root:udbm_root_password@localhost:3306/udbm_mysql_demo",
+            echo=False
+        )
+        
+        with mysql_engine.connect() as conn:
+            # 计算时间范围
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=days)
+            
+            # 获取慢查询数据
+            result = conn.execute(text("""
+                SELECT 
+                    query_text,
+                    execution_time,
+                    sql_command
+                FROM slow_queries 
+                WHERE database_id = :db_id 
+                AND created_at >= :start_date 
+                AND created_at <= :end_date
+                ORDER BY created_at DESC
+            """), {
+                "db_id": database_id,
+                "start_date": start_date,
+                "end_date": end_date
+            })
+            
+            queries = result.fetchall()
+            
+            if not queries or len(queries) == 0:
+                # 没有数据时返回空结果
+                return {
+                    "total_slow_queries": 0,
+                    "avg_execution_time": 0.0,
+                    "most_common_patterns": [],
+                    "top_tables": [],
+                    "recommendations": ["暂无慢查询数据，建议开启MySQL慢查询日志"]
+                }
+            
+            # 分析查询模式
+            patterns = defaultdict(lambda: {"count": 0, "total_time": 0.0})
+            table_usage = defaultdict(lambda: {"count": 0, "total_time": 0.0})
+            
+            total_queries = len(queries)
+            total_time = 0.0
+            
+            for query_row in queries:
+                query_text = query_row[0]
+                execution_time = query_row[1]
+                sql_command = query_row[2] or "UNKNOWN"
+                
+                total_time += execution_time
+                
+                # 提取查询模式
+                pattern = self._extract_query_pattern(query_text, sql_command)
+                patterns[pattern]["count"] += 1
+                patterns[pattern]["total_time"] += execution_time
+                
+                # 提取表名
+                tables = self._extract_table_names(query_text)
+                for table in tables:
+                    table_usage[table]["count"] += 1
+                    table_usage[table]["total_time"] += execution_time
+            
+            # 格式化查询模式
+            most_common_patterns = []
+            for pattern, data in patterns.items():
+                avg_time = data["total_time"] / data["count"] if data["count"] > 0 else 0
+                impact_score = self._calculate_pattern_impact(pattern, data)
+                most_common_patterns.append({
+                    "pattern": pattern,
+                    "count": data["count"],
+                    "avg_time": round(avg_time, 2),
+                    "impact_score": impact_score
+                })
+            
+            # 按影响分数排序
+            most_common_patterns.sort(key=lambda x: x["impact_score"], reverse=True)
+            
+            # 格式化热点表
+            top_tables = []
+            for table, usage in table_usage.items():
+                avg_time = usage["total_time"] / usage["count"] if usage["count"] > 0 else 0
+                top_tables.append({
+                    "table": table,
+                    "query_count": usage["count"],
+                    "avg_time": round(avg_time, 2),
+                    "total_time": round(usage["total_time"], 2)
+                })
+            
+            # 按总时间排序
+            top_tables.sort(key=lambda x: x["total_time"], reverse=True)
+            
+            # 生成建议
+            recommendations = []
+            if most_common_patterns:
+                top_pattern = most_common_patterns[0]
+                if "JOIN" in top_pattern["pattern"]:
+                    recommendations.append("优化JOIN查询，为关联字段添加索引")
+                if "ORDER BY" in top_pattern["pattern"]:
+                    recommendations.append("为排序字段添加索引以提升性能")
+                if "WHERE" in top_pattern["pattern"]:
+                    recommendations.append("为WHERE条件字段添加索引")
+            
+            if top_tables:
+                top_table = top_tables[0]
+                recommendations.append(f"重点优化表 {top_table['table']} 的查询性能")
+            
+            if not recommendations:
+                recommendations = [
+                    "为高频查询的WHERE条件列添加索引",
+                    "定期执行ANALYZE TABLE更新表统计信息",
+                    "考虑使用查询缓存提升性能"
+                ]
+            
+            avg_execution_time = total_time / total_queries if total_queries > 0 else 0.0
+            
+            return {
+                "total_slow_queries": total_queries,
+                "avg_execution_time": round(avg_execution_time, 2),
+                "most_common_patterns": most_common_patterns[:10],
+                "top_tables": top_tables[:10],
+                "recommendations": recommendations
+            }
+    
+    def _extract_query_pattern(self, query_text: str, sql_command: str) -> str:
+        """提取MySQL查询模式"""
+        query_upper = query_text.upper()
+        
+        if sql_command == "SELECT":
+            if "JOIN" in query_upper and "ORDER BY" in query_upper:
+                return "SELECT with JOIN and ORDER BY"
+            elif "JOIN" in query_upper:
+                return "SELECT with JOIN"
+            elif "ORDER BY" in query_upper:
+                return "SELECT with ORDER BY"
+            elif "GROUP BY" in query_upper:
+                return "SELECT with GROUP BY"
+            elif "LIKE" in query_upper:
+                return "SELECT with LIKE"
+            elif "IN (" in query_upper:
+                return "SELECT with IN"
+            else:
+                return "Simple SELECT"
+        elif sql_command == "UPDATE":
+            if "WHERE" in query_upper and "IN (" in query_upper:
+                return "UPDATE with WHERE IN"
+            elif "WHERE" in query_upper:
+                return "UPDATE with WHERE"
+            else:
+                return "Simple UPDATE"
+        elif sql_command == "DELETE":
+            if "WHERE" in query_upper:
+                return "DELETE with WHERE"
+            else:
+                return "Simple DELETE"
+        elif sql_command == "INSERT":
+            if "SELECT" in query_upper:
+                return "INSERT with SELECT"
+            else:
+                return "Simple INSERT"
+        else:
+            return f"{sql_command} query"
+    
+    def _extract_table_names(self, query_text: str) -> List[str]:
+        """提取查询中的表名"""
+        import re
+        query_upper = query_text.upper()
+        
+        # 匹配 FROM、JOIN、UPDATE、INSERT INTO、DELETE FROM 后的表名
+        patterns = [
+            r'FROM\s+(\w+)',
+            r'JOIN\s+(\w+)',
+            r'UPDATE\s+(\w+)',
+            r'INSERT\s+INTO\s+(\w+)',
+            r'DELETE\s+FROM\s+(\w+)'
+        ]
+        
+        tables = []
+        for pattern in patterns:
+            matches = re.findall(pattern, query_upper)
+            tables.extend(matches)
+        
+        # 去重并返回小写表名
+        return list(set(table.lower() for table in tables))
+    
+    def _calculate_pattern_impact(self, pattern: str, data: Dict[str, Any]) -> int:
+        """计算查询模式的影响程度"""
+        base_score = data["count"] * 10  # 数量权重
+        time_score = data["total_time"] * 5  # 执行时间权重
+        
+        # 模式复杂度权重
+        complexity_multipliers = {
+            "SELECT with JOIN and ORDER BY": 1.5,
+            "UPDATE with WHERE IN": 1.4,
+            "DELETE with WHERE": 1.3,
+            "SELECT with JOIN": 1.3,
+            "SELECT with LIKE": 1.2,
+            "INSERT with SELECT": 1.1
+        }
+        
+        multiplier = complexity_multipliers.get(pattern, 1.0)
+        
+        return int((base_score + time_score) * multiplier)
 
     def statistics(self, database_id: int, days: int = 7) -> Dict[str, Any]:
         # 连接到MySQL数据库查询统计信息
@@ -489,7 +699,7 @@ class _MySQLSlowQueries:
         
         # 创建MySQL连接
         mysql_engine = create_engine(
-            f"mysql+pymysql://udbm_mysql_user:udbm_mysql_password@localhost:3306/udbm_mysql_demo",
+            f"mysql+pymysql://root:udbm_root_password@localhost:3306/udbm_mysql_demo",
             echo=False
         )
         

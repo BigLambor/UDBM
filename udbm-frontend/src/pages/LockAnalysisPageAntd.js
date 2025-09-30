@@ -46,6 +46,9 @@ const LockAnalysisPageAntd = () => {
   const [reports, setReports] = useState([]);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportForm] = Form.useForm();
+  
+  // 优化任务相关状态
+  const [optimizationTasks, setOptimizationTasks] = useState([]);
 
   useEffect(() => {
     fetchDatabases();
@@ -55,6 +58,7 @@ const LockAnalysisPageAntd = () => {
     if (selectedDatabase && selectedDatabase.id) {
       fetchMonitoringStatus();
       fetchReports();
+      fetchOptimizationTasks();
     }
   }, [selectedDatabase]);
 
@@ -89,6 +93,17 @@ const LockAnalysisPageAntd = () => {
       setReports(response || []);
     } catch (err) {
       console.error('获取报告列表失败:', err);
+      // 不显示错误消息，静默处理
+    }
+  };
+  
+  const fetchOptimizationTasks = async () => {
+    if (!selectedDatabase || !selectedDatabase.id) return;
+    try {
+      const response = await performanceAPI.getOptimizationTasks(selectedDatabase.id);
+      setOptimizationTasks(response || []);
+    } catch (err) {
+      console.error('获取优化任务失败:', err);
       // 不显示错误消息，静默处理
     }
   };
@@ -423,6 +438,7 @@ const LockAnalysisPageAntd = () => {
           onClick={() => {
             fetchMonitoringStatus();
             fetchReports();
+            fetchOptimizationTasks();
             message.success('数据已刷新');
           }}
         >
@@ -443,10 +459,7 @@ const LockAnalysisPageAntd = () => {
             key="1"
           >
             {selectedDatabase ? (
-              <div>
-                <LockAnalysisHelper databaseType={selectedDatabase.type} />
-                <LockAnalysisDashboardAntd databaseId={selectedDatabase.id} />
-              </div>
+              <LockAnalysisDashboardAntd databaseId={selectedDatabase.id} />
             ) : (
               <Empty
                 description="请选择数据库"
@@ -541,11 +554,19 @@ const LockAnalysisPageAntd = () => {
               <Button type="primary" icon={<PlusOutlined />}>
                 创建任务
               </Button>
+              <Button 
+                icon={<ReloadOutlined />} 
+                onClick={fetchOptimizationTasks}
+                style={{ marginLeft: 8 }}
+              >
+                刷新
+              </Button>
             </div>
             <Table
               columns={taskColumns}
-              dataSource={[]}
+              dataSource={optimizationTasks}
               rowKey="id"
+              loading={loading}
               locale={{
                 emptyText: <Empty description="暂无优化任务" />
               }}

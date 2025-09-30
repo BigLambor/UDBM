@@ -3,9 +3,8 @@ API v1 路由定义
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import (
-    databases, health, performance_tuning, lock_analysis
-)
+from app.api.v1.endpoints import databases, health
+from app.api.v1.endpoints import performance_tuning, lock_analysis
 
 api_router = APIRouter()
 

@@ -92,7 +92,10 @@ async def get_orchestrator(database_id: int) -> Optional[LockAnalysisOrchestrato
             logger.error(f"Database {database_id} not found")
             return None
         
-        db_type = database.type.lower() if database.type else "unknown"
+        # 获取数据库类型名称
+        from app.models.database import DatabaseType
+        db_type_obj = session.query(DatabaseType).filter(DatabaseType.id == database.type_id).first()
+        db_type = db_type_obj.name.lower() if db_type_obj else "unknown"
         
         # 检查是否支持
         supported_types = CollectorRegistry.list_supported_types()
@@ -177,7 +180,11 @@ async def get_lock_dashboard_v2(
             if not database:
                 raise HTTPException(status_code=404, detail="数据库不存在")
             
-            db_type = database.type.lower() if database.type else "unknown"
+            # 获取数据库类型名称
+            from app.models.database import DatabaseType
+            db_type_obj = session.query(DatabaseType).filter(DatabaseType.id == database.type_id).first()
+            db_type = db_type_obj.name.lower() if db_type_obj else "unknown"
+            
             lock_analyzer_class = get_lock_analyzer_by_type(db_type)
             mock_data = lock_analyzer_class.get_mock_data(database_id)
             
@@ -201,7 +208,14 @@ async def get_lock_dashboard_v2(
         database = session.query(DatabaseInstance).filter(
             DatabaseInstance.id == database_id
         ).first()
-        db_type = database.type.lower() if database and database.type else "postgresql"
+        
+        # 获取数据库类型名称
+        from app.models.database import DatabaseType
+        if database:
+            db_type_obj = session.query(DatabaseType).filter(DatabaseType.id == database.type_id).first()
+            db_type = db_type_obj.name.lower() if db_type_obj else "postgresql"
+        else:
+            db_type = "postgresql"
         
         # 转换为前端期望格式
         dashboard_data = DashboardResponseAdapter.adapt(

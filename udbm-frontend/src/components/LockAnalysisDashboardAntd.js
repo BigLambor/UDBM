@@ -220,16 +220,19 @@ const LockAnalysisDashboardAntd = ({ databaseId }) => {
     竞争次数: lock_trends.contention_count?.[index]?.value || 0
   })) || [];
 
-  // 锁类型分布数据
+  // 锁类型分布数据 - 确保至少有一个有效值
   const lockTypeData = [
-    { type: '表锁', value: Math.max(current_locks - waiting_locks, 0), percent: 0.5 },
-    { type: '行锁', value: waiting_locks, percent: 0.3 },
-    { type: '页锁', value: Math.floor(current_locks * 0.2), percent: 0.2 }
-  ];
+    { type: '表锁', value: Math.max(current_locks - waiting_locks, 1) },
+    { type: '行锁', value: Math.max(waiting_locks, 1) },
+    { type: '页锁', value: Math.max(Math.floor(current_locks * 0.2), 1) }
+  ].filter(item => item.value > 0);
 
   // 趋势图配置
   const trendConfig = {
-    data: trendData,
+    data: trendData.length > 0 ? trendData : [
+      { time: '00:00', 等待时间: 0 },
+      { time: '00:30', 等待时间: 0 }
+    ],
     xField: 'time',
     yField: '等待时间',
     smooth: true,
@@ -241,17 +244,19 @@ const LockAnalysisDashboardAntd = ({ databaseId }) => {
     tooltip: {
       showCrosshairs: true,
     },
-    animation: {
+    animation: trendData.length > 0 ? {
       appear: {
-        animation: 'path-in',
-        duration: 1000,
+        animation: 'wave-in',
+        duration: 800,
       },
-    },
+    } : false,
   };
 
   // 饼图配置
   const pieConfig = {
-    data: lockTypeData,
+    data: lockTypeData.length > 0 ? lockTypeData : [
+      { type: '暂无数据', value: 1 }
+    ],
     angleField: 'value',
     colorField: 'type',
     radius: 0.8,
@@ -267,6 +272,12 @@ const LockAnalysisDashboardAntd = ({ databaseId }) => {
         type: 'element-active',
       },
     ],
+    animation: lockTypeData.length > 0 ? {
+      appear: {
+        animation: 'fade-in',
+        duration: 800,
+      },
+    } : false,
   };
 
   // 热点对象表格列定义

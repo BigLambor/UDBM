@@ -324,9 +324,11 @@ class OceanBaseSQLAnalyzer:
             top_queries.append({
                 "id": hash(query.sql_id) % 100000,  # 生成唯一ID
                 "database_id": 1,  # 后续可以从参数传入
+                "sql_id": query.sql_id,  # 添加 sql_id 字段用于前端显示
                 "query_hash": query.sql_id,
                 "query_text": query.query_sql,
                 "execution_time": query.elapsed_time,
+                "elapsed_time": query.elapsed_time,  # 添加 elapsed_time 字段别名
                 "lock_time": query.queue_time,
                 "rows_examined": query.logical_reads,  # 逻辑读作为检查行数
                 "rows_sent": query.rows_returned,
