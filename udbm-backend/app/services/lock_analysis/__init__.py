@@ -18,14 +18,30 @@ from .models import (
     ContentionMetrics,
     LockStatistics,
     AnalysisResult,
-    OptimizationAdvice
+    OptimizationAdvice,
+    LockType,
+    LockMode
 )
 
+from .orchestrator import LockAnalysisOrchestrator
+from .cache import LockAnalysisCache
+from .factories import CollectorRegistry, AnalyzerRegistry, StrategyRegistry
+
 __all__ = [
+    # 数据模型
     "LockSnapshot",
     "WaitChain", 
     "ContentionMetrics",
     "LockStatistics",
     "AnalysisResult",
-    "OptimizationAdvice"
+    "OptimizationAdvice",
+    "LockType",
+    "LockMode",
+    # 核心组件
+    "LockAnalysisOrchestrator",
+    "LockAnalysisCache",
+    # 注册表
+    "CollectorRegistry",
+    "AnalyzerRegistry",
+    "StrategyRegistry"
 ]
