@@ -435,7 +435,7 @@ const Dashboard = () => {
                 size={120}
                 format={percent => (
                   <div>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{percent.toFixed(2)}%</div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{(percent || 0).toFixed(2)}%</div>
                     <div style={{ fontSize: '12px', color: '#666' }}>健康度</div>
                   </div>
                 )}

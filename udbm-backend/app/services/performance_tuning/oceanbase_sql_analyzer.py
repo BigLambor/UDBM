@@ -102,7 +102,9 @@ class OceanBaseSQLAnalyzer:
             "top_performing_sqls": [],
             "worst_performing_sqls": [],
             "resource_utilization": {},
-            "analysis_period": f"{days}天"
+            "performance_patterns": {},
+            "analysis_period": f"{days}天",
+            "analysis_timestamp": datetime.now().isoformat()
         }
         
         # 生成每日统计
@@ -133,6 +135,9 @@ class OceanBaseSQLAnalyzer:
         
         trends["top_performing_sqls"] = self._get_top_performing_sqls(all_queries, 10)
         trends["worst_performing_sqls"] = self._get_worst_performing_sqls(all_queries, 10)
+        
+        # 生成性能模式
+        trends["performance_patterns"] = self._analyze_performance_patterns(all_queries)
         
         return trends
     
@@ -315,17 +320,31 @@ class OceanBaseSQLAnalyzer:
         """获取最慢的查询"""
         top_queries = []
         for query in slow_queries[:limit]:
+            # 使用前端期望的字段名称
             top_queries.append({
-                "sql_id": query.sql_id,
-                "query_sql": query.query_sql,
-                "elapsed_time": query.elapsed_time,
+                "id": hash(query.sql_id) % 100000,  # 生成唯一ID
+                "database_id": 1,  # 后续可以从参数传入
+                "query_hash": query.sql_id,
+                "query_text": query.query_sql,
+                "execution_time": query.elapsed_time,
+                "lock_time": query.queue_time,
+                "rows_examined": query.logical_reads,  # 逻辑读作为检查行数
+                "rows_sent": query.rows_returned,
+                "user_host": f"{query.module}@{query.tenant_name}",
+                "sql_command": query.action,
+                "timestamp": query.request_time.isoformat(),
+                "status": "completed",
+                "source": "oceanbase_gv_sql_audit",
+                # OceanBase特有字段
                 "cpu_time": query.cpu_time,
                 "physical_reads": query.physical_reads,
                 "logical_reads": query.logical_reads,
-                "rows_returned": query.rows_returned,
+                "mem_used": query.mem_used,
                 "execution_count": random.randint(1, 100),
                 "avg_elapsed_time": query.elapsed_time,
-                "optimization_potential": self._calculate_optimization_potential(query)
+                "optimization_potential": self._calculate_optimization_potential(query),
+                "plan_id": query.plan_id,
+                "physical_read_time": query.physical_read_time
             })
         return top_queries
     

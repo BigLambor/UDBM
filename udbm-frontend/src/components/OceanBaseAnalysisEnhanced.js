@@ -530,7 +530,7 @@ ALTER TABLE cold_table DROP PARTITION p_old;`;
         sorter: (a, b) => a.elapsed_time - b.elapsed_time,
         render: (value) => (
           <span style={{ color: value > 5 ? '#ff4d4f' : '#52c41a' }}>
-            {value.toFixed(3)}s
+            {(value || 0).toFixed(3)}s
           </span>
         ),
       },
@@ -539,7 +539,7 @@ ALTER TABLE cold_table DROP PARTITION p_old;`;
         dataIndex: 'cpu_time',
         key: 'cpu_time',
         width: 100,
-        render: (value) => `${value.toFixed(3)}s`,
+        render: (value) => `${(value || 0).toFixed(3)}s`,
       },
       {
         title: '物理读',
@@ -792,7 +792,7 @@ ALTER TABLE cold_table DROP PARTITION p_old;`;
         title: '数据大小',
         dataIndex: 'data_size_mb',
         key: 'data_size_mb',
-        render: (value) => `${value.toFixed(1)} MB`,
+        render: (value) => `${(value || 0).toFixed(1)} MB`,
       },
       {
         title: '热点原因',

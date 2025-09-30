@@ -40,27 +40,30 @@ services:
     networks:
       - udbm-network
 
-  # OceanBase数据库 (模拟服务 - 用于开发测试)
-  # 注意：由于OceanBase对系统参数要求较高，在Docker Desktop环境中可能无法正常启动
-  # 暂时使用MySQL作为OceanBase的替代方案进行开发测试
-  oceanbase-mock:
-    image: mysql:8.0
-    container_name: udbm-oceanbase-mock
+  # OceanBase数据库 (真正的OceanBase社区版)
+  oceanbase:
+    image: oceanbase/oceanbase-ce:latest
+    container_name: udbm-oceanbase
     environment:
-      MYSQL_ROOT_PASSWORD: udbm_ob_root_password
-      MYSQL_DATABASE: udbm_oceanbase_demo
-      MYSQL_USER: udbm_ob_user
-      MYSQL_PASSWORD: udbm_ob_password
+      - OB_ROOT_PASSWORD=udbm_ob_root_password
+      - OB_CLUSTER_NAME=obcluster
+      - OB_TENANT_NAME=test
     ports:
-      - "2881:3306"  # 映射到OceanBase端口以保持一致性
+      - "2881:2881"  # OceanBase默认端口
+      - "2882:2882"  # OceanBase RPC端口
     volumes:
-      - oceanbase_data:/var/lib/mysql
-      - ./init_oceanbase.sql:/docker-entrypoint-initdb.d/10_init_oceanbase.sql
-      - ./performance_tuning_tables_oceanbase.sql:/docker-entrypoint-initdb.d/20_performance_tuning_tables_oceanbase.sql
-      - ./sample_oceanbase_data_simple.sql:/docker-entrypoint-initdb.d/30_sample_oceanbase_data_simple.sql
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+      - oceanbase_data:/root/ob
     networks:
       - udbm-network
+    # OceanBase需要特权模式和一些系统参数
+    privileged: true
+    # 设置内存限制，OceanBase需要较多内存
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
 
   # Redis缓存
   redis:
@@ -95,19 +98,6 @@ services:
       - udbm-network
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  # pgAdmin (可选，用于数据库管理)
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: udbm-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@udbm.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-    ports:
-      - "5050:80"
-    depends_on:
-      - postgres
-    networks:
-      - udbm-network
 
 volumes:
   postgres_data:

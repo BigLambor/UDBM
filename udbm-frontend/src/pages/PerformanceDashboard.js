@@ -749,7 +749,7 @@ const PerformanceDashboard = () => {
                         )}
                         <span style={{ fontSize: '14px' }}>
                           {performanceTrend.cpu.value > 0 ? '+' : ''}
-                          {performanceTrend.cpu.value.toFixed(2)}%
+                          {(performanceTrend.cpu.value || 0).toFixed(2)}%
                         </span>
                       </div>
                     </div>
@@ -771,7 +771,7 @@ const PerformanceDashboard = () => {
                         )}
                         <span style={{ fontSize: '14px' }}>
                           {performanceTrend.memory.value > 0 ? '+' : ''}
-                          {performanceTrend.memory.value.toFixed(2)}%
+                          {(performanceTrend.memory.value || 0).toFixed(2)}%
                         </span>
                       </div>
                     </div>
@@ -793,7 +793,7 @@ const PerformanceDashboard = () => {
                         )}
                         <span style={{ fontSize: '14px' }}>
                           {performanceTrend.qps.value > 0 ? '+' : ''}
-                          {performanceTrend.qps.value.toFixed(2)}%
+                          {(performanceTrend.qps.value || 0).toFixed(2)}%
                         </span>
                       </div>
                     </div>

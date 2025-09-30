@@ -386,7 +386,7 @@ const EnhancedDashboard = () => {
                 size={120}
                 format={percent => (
                   <div>
-                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{percent.toFixed(1)}%</div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{(percent || 0).toFixed(1)}%</div>
                     <div style={{ fontSize: '12px', color: '#666' }}>健康度</div>
                   </div>
                 )}
@@ -540,7 +540,7 @@ const EnhancedDashboard = () => {
                       showInfo={false}
                     />
                     <div style={{ fontSize: '12px', color: '#666' }}>
-                      健康度 {healthRatio.toFixed(1)}%
+                      健康度 {(healthRatio || 0).toFixed(1)}%
                     </div>
                   </div>
                   <Space size={8}>

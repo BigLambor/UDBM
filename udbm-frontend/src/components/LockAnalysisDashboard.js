@@ -183,7 +183,7 @@ const LockAnalysisDashboard = ({ databaseId }) => {
                     整体健康评分
                   </Typography>
                   <Typography variant="h4" style={{ color: getHealthScoreColor(overall_health_score) }}>
-                    {overall_health_score.toFixed(1)}
+                    {(overall_health_score || 0).toFixed(1)}
                   </Typography>
                 </Box>
                 <CheckCircleIcon style={{ color: getHealthScoreColor(overall_health_score), fontSize: 40 }} />

@@ -253,8 +253,8 @@ const OceanBaseAnalysis = ({ databaseId }) => {
                   {sqlAnalysis.top_slow_queries.slice(0, 10).map((query, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-mono text-sm">{query.sql_id}</TableCell>
-                      <TableCell>{query.elapsed_time.toFixed(3)}s</TableCell>
-                      <TableCell>{query.cpu_time.toFixed(3)}s</TableCell>
+                      <TableCell>{(query.elapsed_time || 0).toFixed(3)}s</TableCell>
+                      <TableCell>{(query.cpu_time || 0).toFixed(3)}s</TableCell>
                       <TableCell>{query.physical_reads.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge variant={query.optimization_potential === 'high' ? 'destructive' : 'secondary'}>
@@ -437,7 +437,7 @@ const OceanBaseAnalysis = ({ databaseId }) => {
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <Progress value={table.optimization_score} className="w-16" />
-                          <span className="text-sm">{table.optimization_score.toFixed(1)}</span>
+                          <span className="text-sm">{(table.optimization_score || 0).toFixed(1)}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -513,7 +513,7 @@ const OceanBaseAnalysis = ({ databaseId }) => {
                       <TableCell className="font-medium">{partition.table_name}</TableCell>
                       <TableCell className="font-mono text-sm">{partition.partition_name}</TableCell>
                       <TableCell>{partition.access_frequency.toLocaleString()}</TableCell>
-                      <TableCell>{partition.data_size_mb.toFixed(1)} MB</TableCell>
+                      <TableCell>{(partition.data_size_mb || 0).toFixed(1)} MB</TableCell>
                       <TableCell>
                         <Badge variant="destructive">{partition.hotspot_reason}</Badge>
                       </TableCell>

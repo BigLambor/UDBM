@@ -444,7 +444,7 @@ const LockAnalysisDashboardAntd = ({ databaseId }) => {
             </div>
             <div style={{ marginTop: 8 }}>
               <Text type="secondary">锁效率: </Text>
-              <Text strong>{lock_efficiency_score.toFixed(1)}%</Text>
+              <Text strong>{(lock_efficiency_score || 0).toFixed(1)}%</Text>
             </div>
           </Card>
         </Col>

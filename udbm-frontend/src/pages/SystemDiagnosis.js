@@ -332,7 +332,7 @@ const SystemDiagnosis = () => {
                   color: getScoreColor(currentDiagnosis.overall_score),
                   marginBottom: '8px'
                 }}>
-                  {currentDiagnosis.overall_score.toFixed(1)}
+                  {(currentDiagnosis.overall_score || 0).toFixed(1)}
                 </div>
                 <Tag color={getScoreColor(currentDiagnosis.overall_score)} style={{ fontSize: '14px' }}>
                   {currentDiagnosis.overall_score >= 80 ? '健康' :
@@ -425,7 +425,7 @@ const SystemDiagnosis = () => {
                               color={getScoreColor(diagnosis.overall_score)}
                               style={{ marginLeft: 8 }}
                             >
-                              评分: {diagnosis.overall_score.toFixed(1)}
+                              评分: {(diagnosis.overall_score || 0).toFixed(1)}
                             </Tag>
                           </div>
                         }

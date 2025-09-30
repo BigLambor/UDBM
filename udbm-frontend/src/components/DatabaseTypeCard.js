@@ -176,7 +176,7 @@ const DatabaseTypeCard = ({
                   fontWeight: 500,
                   color: healthColor
                 }}>
-                  {healthRatio.toFixed(1)}%
+                  {(healthRatio || 0).toFixed(1)}%
                 </span>
               }
             />

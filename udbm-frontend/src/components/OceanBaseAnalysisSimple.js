@@ -213,8 +213,8 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
                   {sqlAnalysis.top_slow_queries.slice(0, 10).map((query, index) => (
                     <tr key={index}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">{query.sql_id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{query.elapsed_time.toFixed(3)}s</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{query.cpu_time.toFixed(3)}s</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">{(query.elapsed_time || 0).toFixed(3)}s</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">{(query.cpu_time || 0).toFixed(3)}s</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">{query.physical_reads.toLocaleString()}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className={`px-2 py-1 rounded text-xs ${
@@ -396,7 +396,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
                               style={{ width: `${table.optimization_score}%` }}
                             ></div>
                           </div>
-                          <span className="text-sm">{table.optimization_score.toFixed(1)}</span>
+                          <span className="text-sm">{(table.optimization_score || 0).toFixed(1)}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -468,7 +468,7 @@ const OceanBaseAnalysisSimple = ({ databaseId }) => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{partition.table_name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">{partition.partition_name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">{partition.access_frequency.toLocaleString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{partition.data_size_mb.toFixed(1)} MB</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">{(partition.data_size_mb || 0).toFixed(1)} MB</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">
                           {partition.hotspot_reason}

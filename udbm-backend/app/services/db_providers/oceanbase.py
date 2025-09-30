@@ -253,7 +253,13 @@ class _OBSlowQueries:
     def list(self, database_id: int, limit: int, offset: int):
         # 使用SQL分析器获取慢查询
         analysis = self._sql_analyzer.analyze_slow_queries(database_id, threshold_seconds=1.0)
-        return analysis.get("top_slow_queries", [])[offset:offset + limit]
+        queries = analysis.get("top_slow_queries", [])[offset:offset + limit]
+        
+        # 将数据库ID添加到每个查询
+        for query in queries:
+            query["database_id"] = database_id
+        
+        return queries
 
     def capture(self, database_id: int, threshold_seconds: float = 1.0) -> List[Dict[str, Any]]:
         # 使用SQL分析器捕获慢查询
@@ -288,11 +294,55 @@ class _OBSlowQueries:
     def patterns(self, database_id: int, days: int = 7) -> Dict[str, Any]:
         # 使用SQL分析器获取模式分析
         trends = self._sql_analyzer.analyze_sql_performance_trends(database_id, days)
+        daily_stats = trends.get("daily_stats", [])
+        performance_patterns = trends.get("performance_patterns", {})
+        
+        # 计算总慢查询数
+        total_slow_queries = sum(day["slow_queries"] for day in daily_stats) if daily_stats else 0
+        
+        # 计算平均执行时间
+        avg_execution_time = sum(day["avg_elapsed_time"] for day in daily_stats) / len(daily_stats) if daily_stats else 0
+        
+        # 格式化查询模式
+        common_operations = performance_patterns.get("common_operations", {})
+        most_common_patterns = []
+        for pattern, count in sorted(common_operations.items(), key=lambda x: x[1], reverse=True)[:10]:
+            most_common_patterns.append({
+                "pattern": pattern,
+                "count": count,
+                "avg_time": round(avg_execution_time, 2),
+                "impact_score": min(100, count * 5)
+            })
+        
+        # 格式化表访问模式
+        table_access_patterns = performance_patterns.get("table_access_patterns", {})
+        top_tables = []
+        for table, count in sorted(table_access_patterns.items(), key=lambda x: x[1], reverse=True)[:10]:
+            top_tables.append({
+                "table": table,
+                "query_count": count,
+                "avg_time": round(avg_execution_time, 2),
+                "total_time": round(count * avg_execution_time, 2)
+            })
+        
+        # 生成优化建议
+        recommendations = [
+            "定期执行 DBMS_STATS.GATHER_TABLE_STATS 更新统计信息",
+            "合理安排 Major Compaction 时间窗口",
+            "监控计划缓存命中率，及时清理过期计划",
+            "对高频查询的WHERE条件列创建合适的索引",
+            "考虑使用Outline固定执行计划",
+            "检查RPC队列长度，避免过载"
+        ]
+        
         return {
-            "total_slow_queries": sum(day["slow_queries"] for day in trends.get("daily_stats", [])),
-            "avg_execution_time": sum(day["avg_elapsed_time"] for day in trends.get("daily_stats", [])) / max(1, len(trends.get("daily_stats", []))),
-            "most_common_patterns": trends.get("performance_patterns", {}).get("common_operations", {}),
-            "top_tables": list(trends.get("performance_patterns", {}).get("table_access_patterns", {}).keys())[:10]
+            "total_slow_queries": total_slow_queries,
+            "avg_execution_time": round(avg_execution_time, 2),
+            "most_common_patterns": most_common_patterns,
+            "top_tables": top_tables,
+            "recommendations": recommendations[:3],  # 返回前3个建议
+            "analysis_timestamp": trends.get("analysis_timestamp", ""),
+            "data_source": "oceanbase_gv_sql_audit"
         }
 
     def statistics(self, database_id: int, days: int = 7) -> Dict[str, Any]:
