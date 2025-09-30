@@ -49,9 +49,15 @@ def get_lock_analyzer(session: Session = Depends(get_sync_db_session)) -> LockAn
 @router.get("/dashboard/{database_id}")
 async def get_lock_dashboard(
     database_id: int,
+    force_refresh: bool = Query(False, description="强制刷新，跳过缓存"),
+    use_v2: bool = Query(True, description="使用V2新架构"),
     db: AsyncSession = Depends(get_db)
 ):
-    """获取锁分析仪表板"""
+    """
+    获取锁分析仪表板
+    
+    V2版本使用新架构的真实数据采集和智能分析
+    """
     try:
         # 获取数据库信息
         session = get_sync_db_session()
@@ -60,11 +66,81 @@ async def get_lock_dashboard(
         if not database:
             raise HTTPException(status_code=404, detail="数据库不存在")
         
-        # 根据数据库类型获取对应的锁分析器
         db_type = database.type.lower() if database.type else "unknown"
-        lock_analyzer_class = get_lock_analyzer_by_type(db_type)
         
-        # 获取模拟数据
+        # 如果启用V2且数据库类型支持，使用新架构
+        if use_v2:
+            try:
+                from app.services.lock_analysis import CollectorRegistry
+                from app.services.lock_analysis.connection_manager import ConnectionPoolManager
+                from app.services.lock_analysis.adapters import DashboardResponseAdapter
+                from app.services.lock_analysis import LockAnalysisOrchestrator, LockAnalysisCache
+                
+                # 检查是否支持
+                if db_type in CollectorRegistry.list_supported_types():
+                    # 获取或创建连接池
+                    pool = await ConnectionPoolManager.get_pool(
+                        database_id=database_id,
+                        db_type=db_type,
+                        host=database.host,
+                        port=database.port,
+                        database=database.database_name,
+                        username=database.username,
+                        password=database.password_encrypted,
+                        min_size=2,
+                        max_size=10
+                    )
+                    
+                    if pool:
+                        # 创建采集器
+                        collector = CollectorRegistry.create_collector(
+                            db_type,
+                            pool=pool,
+                            database_id=database_id
+                        )
+                        
+                        # 创建缓存（降级处理）
+                        try:
+                            cache = LockAnalysisCache(
+                                redis_url='redis://localhost:6379/0',
+                                enable_local=True,
+                                enable_redis=True
+                            )
+                        except:
+                            cache = LockAnalysisCache(
+                                enable_local=True,
+                                enable_redis=False
+                            )
+                        
+                        # 创建编排器
+                        orchestrator = LockAnalysisOrchestrator(
+                            collector=collector,
+                            cache=cache
+                        )
+                        
+                        # 执行分析
+                        analysis_result = await orchestrator.analyze_comprehensive(
+                            database_id=database_id,
+                            force_refresh=force_refresh,
+                            duration=timedelta(hours=1)
+                        )
+                        
+                        # 转换为前端格式
+                        dashboard_data = DashboardResponseAdapter.adapt(
+                            analysis_result,
+                            db_type=db_type
+                        )
+                        
+                        return dashboard_data
+            
+            except Exception as e:
+                # V2失败，降级为V1
+                import traceback
+                traceback.print_exc()
+                pass
+        
+        # 降级为旧版API（Mock数据）
+        lock_analyzer_class = get_lock_analyzer_by_type(db_type)
         mock_data = lock_analyzer_class.get_mock_data(database_id)
         
         # 如果是不支持的数据库类型
