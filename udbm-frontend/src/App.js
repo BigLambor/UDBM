@@ -13,7 +13,8 @@ import {
   BarChartOutlined,
   SearchOutlined,
   SecurityScanOutlined,
-  MenuOutlined
+  MenuOutlined,
+  BookOutlined
 } from '@ant-design/icons';
 
 import './App.css';
@@ -27,6 +28,7 @@ import IndexOptimization from './pages/IndexOptimization';
 import SystemDiagnosis from './pages/SystemDiagnosis';
 import ExecutionPlanAnalysis from './pages/ExecutionPlanAnalysis';
 import LockAnalysisPageAntd from './pages/LockAnalysisPageAntd';
+import HelpCenter from './pages/HelpCenter';
 
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -46,6 +48,7 @@ const DynamicBreadcrumb = () => {
       '/performance/execution-plan-analysis': [{ title: 'UDBM' }, { title: '性能调优' }, { title: '执行计划分析' }],
       '/performance/system-diagnosis': [{ title: 'UDBM' }, { title: '性能调优' }, { title: '系统诊断' }],
       '/performance/lock-analysis': [{ title: 'UDBM' }, { title: '性能调优' }, { title: '锁分析' }],
+      '/help-center': [{ title: 'UDBM' }, { title: '帮助中心' }],
       '/monitoring': [{ title: 'UDBM' }, { title: '监控告警' }],
       '/backup': [{ title: 'UDBM' }, { title: '备份恢复' }],
       '/admin': [{ title: 'UDBM' }, { title: '系统管理' }],
@@ -121,6 +124,7 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
       '17': '/admin',
       '18': '/admin',
       '19': '/admin',
+      '20': '/help-center',
     };
 
     const path = pathMap[key];
@@ -146,6 +150,7 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
       '/performance/execution-plan-analysis': ['8'],
       '/performance/system-diagnosis': ['9'],
       '/performance/lock-analysis': ['10'],
+      '/help-center': ['20'],
       '/monitoring': ['11'],
       '/backup': ['14'],
       '/admin': ['17'],
@@ -241,6 +246,9 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
             <Menu.Item key="18">角色权限</Menu.Item>
             <Menu.Item key="19">系统设置</Menu.Item>
           </SubMenu>
+          <Menu.Item key="20" icon={<BookOutlined />}>
+            帮助中心
+          </Menu.Item>
         </Menu>
       </Sider>
 
@@ -349,6 +357,7 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
               <Route path="/performance/execution-plan-analysis" element={<ExecutionPlanAnalysis />} />
               <Route path="/performance/system-diagnosis" element={<SystemDiagnosis />} />
               <Route path="/performance/lock-analysis" element={<LockAnalysisPageAntd />} />
+              <Route path="/help-center" element={<HelpCenter />} />
             </Routes>
           </div>
         </Content>

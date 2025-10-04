@@ -10,8 +10,9 @@ import {
   BarChartOutlined, LineChartOutlined, PieChartOutlined,
   ThunderboltOutlined, AlertOutlined, ReloadOutlined,
   RiseOutlined, FallOutlined, MinusOutlined, FireOutlined,
-  TrophyOutlined, RocketOutlined
+  TrophyOutlined, RocketOutlined, QuestionCircleOutlined, BookOutlined
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import { Line, Bar, Pie } from '@ant-design/charts';
 
 import { performanceAPI } from '../services/api';
@@ -25,6 +26,7 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 
 const PerformanceDashboard = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [selectedDatabase, setSelectedDatabase] = useState(null);
   const [selectedDatabaseType, setSelectedDatabaseType] = useState('all');
@@ -588,12 +590,28 @@ const PerformanceDashboard = () => {
             <h2 style={{ margin: 0 }}>
               <DashboardOutlined style={{ marginRight: 8 }} />
               性能监控仪表板
+              <Tooltip title="查看详细帮助文档">
+                <Button 
+                  type="link" 
+                  icon={<QuestionCircleOutlined />}
+                  onClick={() => navigate('/help-center')}
+                  style={{ marginLeft: 8 }}
+                />
+              </Tooltip>
             </h2>
             <p style={{ margin: '8px 0', color: '#666' }}>
               统一监控所有数据库类型的性能指标，智能适配不同数据库的特有功能
             </p>
           </div>
           <Space>
+            <Tooltip title="查看帮助文档">
+              <Button
+                icon={<BookOutlined />}
+                onClick={() => navigate('/help-center')}
+              >
+                帮助文档
+              </Button>
+            </Tooltip>
             <span style={{ marginRight: 8 }}>
               实时监控:
               <Switch
