@@ -29,6 +29,7 @@ import SystemDiagnosis from './pages/SystemDiagnosis';
 import ExecutionPlanAnalysis from './pages/ExecutionPlanAnalysis';
 import LockAnalysisPageAntd from './pages/LockAnalysisPageAntd';
 import HelpCenter from './pages/HelpCenter';
+import FloatingHelpButton from './components/FloatingHelpButton';
 
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -294,36 +295,44 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
           }}
         >
           {mobileView && (
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+            <>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <Button
+                  type="text"
+                  icon={<MenuOutlined />}
+                  onClick={() => {
+                    const newCollapsed = !sidebarCollapsed;
+                    setSidebarCollapsed(newCollapsed);
+                    onCollapse(newCollapsed);
+                  }}
+                  style={{ marginRight: 16 }}
+                />
+                <div className="logo" style={{
+                  height: '32px',
+                  margin: 0,
+                  background: 'linear-gradient(135deg, #1f1f1f 0%, #2c2c2c 100%)',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  color: 'white',
+                  padding: '0 12px',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                  transition: 'all 0.3s ease'
+                }}>
+                  UDBM
+                </div>
+              </div>
               <Button
                 type="text"
-                icon={<MenuOutlined />}
-                onClick={() => {
-                  const newCollapsed = !sidebarCollapsed;
-                  setSidebarCollapsed(newCollapsed);
-                  onCollapse(newCollapsed);
-                }}
-                style={{ marginRight: 16 }}
+                icon={<BookOutlined />}
+                onClick={() => navigate('/help-center')}
+                style={{ fontSize: '18px' }}
               />
-              <div className="logo" style={{
-                height: '32px',
-                margin: 0,
-                background: 'linear-gradient(135deg, #1f1f1f 0%, #2c2c2c 100%)',
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                color: 'white',
-                padding: '0 12px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                transition: 'all 0.3s ease'
-              }}>
-                UDBM
-              </div>
-            </div>
+            </>
           )}
         </Header>
         
@@ -361,6 +370,9 @@ const AppContent = ({ collapsed, onCollapse, handleMenuClick }) => {
             </Routes>
           </div>
         </Content>
+        
+        {/* 桌面端浮动帮助按钮 */}
+        {!mobileView && location.pathname !== '/help-center' && <FloatingHelpButton />}
         
         <Footer style={{ 
           textAlign: 'center',
